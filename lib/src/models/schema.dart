@@ -10,14 +10,14 @@ SchemaType schemaTypeFromString(String value) {
 }
 
 class Schema {
-  Schema(
-      {required this.id,
-      required this.type,
-      this.title = 'no-title',
-      this.description,
-      this.parentIdKey,
-      List<String>? dependentsAddedBy})
-      : dependentsAddedBy = dependentsAddedBy ?? [];
+  Schema({
+    required this.id,
+    required this.type,
+    this.title = 'no-title',
+    this.description,
+    this.parentIdKey,
+    List<String>? dependentsAddedBy,
+  }) : dependentsAddedBy = dependentsAddedBy ?? [];
 
   factory Schema.fromJson(
     Map<String, dynamic> json, {
@@ -27,7 +27,7 @@ class Schema {
   }) {
     Schema schema;
 
-// Solucion temporal y personalizada
+    // Solucion temporal y personalizada
     if (json['enum'] != null &&
         json['enum'] is List<String> &&
         json['enum'].length == 1) {
@@ -48,7 +48,12 @@ class Schema {
         break;
 
       case SchemaType.array:
-        schema = SchemaArray.fromJson(id, json, parent: parent);
+        schema = SchemaArray.fromJson(
+          id,
+          json,
+          parent: parent,
+          initialData: initialData,
+        );
 
         // validate if is a file array, it means multiplefile
         if (schema is SchemaArray && schema.isArrayMultipleFile())
@@ -110,11 +115,7 @@ class Schema {
 // Solucion temporal y personalizada
 class SchemaEnum extends Schema {
   SchemaEnum({required this.enumm})
-      : super(
-          id: kNoIdKey,
-          title: 'no-title',
-          type: SchemaType.enumm,
-        );
+    : super(id: kNoIdKey, title: 'no-title', type: SchemaType.enumm);
 
   final List<String> enumm;
 }

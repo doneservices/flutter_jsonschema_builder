@@ -13,25 +13,31 @@ class SchemaArray extends Schema {
     required String id,
     required this.itemsBaseSchema,
     String? title,
+    String? description,
+    this.defaultValue,
     this.minItems,
     this.maxItems,
     this.uniqueItems = true,
     this.items = const [],
     this.required = false,
   }) : super(
-          id: id,
-          title: title ?? 'no-title',
-          type: SchemaType.array,
-        );
+         id: id,
+         title: title ?? 'no-title',
+         description: description,
+         type: SchemaType.array,
+       );
 
   factory SchemaArray.fromJson(
     String id,
     Map<String, dynamic> json, {
     Schema? parent,
+    Map<String, dynamic>? initialData,
   }) {
     final schemaArray = SchemaArray(
       id: id,
       title: json['title'],
+      description: json['description'],
+      defaultValue: initialData?[id] ?? json['default'],
       minItems: json['minItems'],
       maxItems: json['maxItems'],
       uniqueItems: json['uniqueItems'] ?? true,
@@ -49,25 +55,29 @@ class SchemaArray extends Schema {
     String? parentIdKey,
     List<String>? dependentsAddedBy,
   }) {
-    var newSchema = SchemaArray(
-      id: id,
-      title: title,
-      maxItems: maxItems,
-      minItems: minItems,
-      uniqueItems: uniqueItems,
-      itemsBaseSchema: itemsBaseSchema,
-      required: required,
-    )
-      ..parentIdKey = parentIdKey ?? this.parentIdKey
-      ..dependentsAddedBy = dependentsAddedBy ?? this.dependentsAddedBy
-      ..type = type;
+    var newSchema =
+        SchemaArray(
+            id: id,
+            title: title,
+            maxItems: maxItems,
+            minItems: minItems,
+            uniqueItems: uniqueItems,
+            itemsBaseSchema: itemsBaseSchema,
+            defaultValue: defaultValue,
+            required: required,
+          )
+          ..parentIdKey = parentIdKey ?? this.parentIdKey
+          ..dependentsAddedBy = dependentsAddedBy ?? this.dependentsAddedBy
+          ..type = type;
 
     newSchema.items = items
-        .map((e) => e.copyWith(
-              id: e.id,
-              parentIdKey: newSchema.idKey,
-              dependentsAddedBy: newSchema.dependentsAddedBy,
-            ))
+        .map(
+          (e) => e.copyWith(
+            id: e.id,
+            parentIdKey: newSchema.idKey,
+            dependentsAddedBy: newSchema.dependentsAddedBy,
+          ),
+        )
         .toList();
 
     return newSchema;
@@ -78,6 +88,7 @@ class SchemaArray extends Schema {
 
   // it allow us
   dynamic itemsBaseSchema;
+  dynamic defaultValue;
 
   int? minItems;
   int? maxItems;
@@ -93,13 +104,14 @@ class SchemaArray extends Schema {
 
   SchemaProperty toSchemaPropertyMultipleFiles() {
     return SchemaProperty(
-      id: id,
-      title: title,
-      type: SchemaType.string,
-      format: PropertyFormat.dataurl,
-      required: required,
-      description: description,
-    )
+        id: id,
+        title: title,
+        type: SchemaType.string,
+        format: PropertyFormat.dataurl,
+        required: required,
+        description: description,
+        defaultValue: defaultValue,
+      )
       ..parentIdKey = parentIdKey
       ..dependentsAddedBy = dependentsAddedBy
       ..isMultipleFile = true;
