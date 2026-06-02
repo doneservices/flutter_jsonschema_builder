@@ -21,11 +21,11 @@ class SchemaArray extends Schema {
     this.items = const [],
     this.required = false,
   }) : super(
-         id: id,
-         title: title ?? 'no-title',
-         description: description,
-         type: SchemaType.array,
-       );
+          id: id,
+          title: title ?? 'no-title',
+          description: description,
+          type: SchemaType.array,
+        );
 
   factory SchemaArray.fromJson(
     String id,
@@ -55,20 +55,19 @@ class SchemaArray extends Schema {
     String? parentIdKey,
     List<String>? dependentsAddedBy,
   }) {
-    var newSchema =
-        SchemaArray(
-            id: id,
-            title: title,
-            maxItems: maxItems,
-            minItems: minItems,
-            uniqueItems: uniqueItems,
-            itemsBaseSchema: itemsBaseSchema,
-            defaultValue: defaultValue,
-            required: required,
-          )
-          ..parentIdKey = parentIdKey ?? this.parentIdKey
-          ..dependentsAddedBy = dependentsAddedBy ?? this.dependentsAddedBy
-          ..type = type;
+    var newSchema = SchemaArray(
+      id: id,
+      title: title,
+      description: description,
+      maxItems: maxItems,
+      minItems: minItems,
+      uniqueItems: uniqueItems,
+      itemsBaseSchema: itemsBaseSchema,
+      defaultValue: defaultValue,
+      required: required,
+    )
+      ..parentIdKey = parentIdKey ?? this.parentIdKey
+      ..dependentsAddedBy = dependentsAddedBy ?? this.dependentsAddedBy;
 
     newSchema.items = items
         .map(
@@ -104,14 +103,14 @@ class SchemaArray extends Schema {
 
   SchemaProperty toSchemaPropertyMultipleFiles() {
     return SchemaProperty(
-        id: id,
-        title: title,
-        type: SchemaType.string,
-        format: PropertyFormat.dataurl,
-        required: required,
-        description: description,
-        defaultValue: defaultValue,
-      )
+      id: id,
+      title: title,
+      type: SchemaType.string,
+      format: PropertyFormat.dataurl,
+      required: required,
+      description: description,
+      defaultValue: defaultValue,
+    )
       ..parentIdKey = parentIdKey
       ..dependentsAddedBy = dependentsAddedBy
       ..isMultipleFile = true;

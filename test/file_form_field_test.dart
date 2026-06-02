@@ -10,12 +10,13 @@ void main() {
     var pickCount = 0;
     dynamic latestData;
     dynamic savedData;
+    final initialData = <String, dynamic>{};
 
     await tester.pumpWidget(
       _TestApp(
         form: JsonForm(
           jsonSchema: json.encode(_schemaWithMultipleFiles),
-          initialData: Map<String, dynamic>.of(const {}),
+          initialData: initialData,
           onChanged: (data) => latestData = Map<String, dynamic>.from(data),
           onFormDataSaved: (data) {
             savedData = Map<String, dynamic>.from(data as Map);
@@ -80,17 +81,18 @@ void main() {
   ) async {
     dynamic handlerValue;
     List<SchemaFormFile>? renderedFiles;
+    final initialData = <String, dynamic>{
+      'files': <String>[
+        'stored-file-1.jpg',
+        'stored-file-2.jpg',
+      ],
+    };
 
     await tester.pumpWidget(
       _TestApp(
         form: JsonForm(
           jsonSchema: json.encode(_schemaWithMultipleFiles),
-          initialData: Map<String, dynamic>.of({
-            'files': List<String>.of(const [
-              'stored-file-1.jpg',
-              'stored-file-2.jpg',
-            ]),
-          }),
+          initialData: initialData,
           onFormDataSaved: (_) {},
           fileHandler: () => {'*': (_) async => const []},
           initialFileValueHandler: () => {
