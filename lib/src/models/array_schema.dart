@@ -13,6 +13,8 @@ class SchemaArray extends Schema {
     required String id,
     required this.itemsBaseSchema,
     String? title,
+    String? description,
+    this.defaultValue,
     this.minItems,
     this.maxItems,
     this.uniqueItems = true,
@@ -21,6 +23,7 @@ class SchemaArray extends Schema {
   }) : super(
           id: id,
           title: title ?? 'no-title',
+          description: description,
           type: SchemaType.array,
         );
 
@@ -28,10 +31,13 @@ class SchemaArray extends Schema {
     String id,
     Map<String, dynamic> json, {
     Schema? parent,
+    Map<String, dynamic>? initialData,
   }) {
     final schemaArray = SchemaArray(
       id: id,
       title: json['title'],
+      description: json['description'],
+      defaultValue: initialData?[id] ?? json['default'],
       minItems: json['minItems'],
       maxItems: json['maxItems'],
       uniqueItems: json['uniqueItems'] ?? true,
@@ -52,22 +58,25 @@ class SchemaArray extends Schema {
     var newSchema = SchemaArray(
       id: id,
       title: title,
+      description: description,
       maxItems: maxItems,
       minItems: minItems,
       uniqueItems: uniqueItems,
       itemsBaseSchema: itemsBaseSchema,
+      defaultValue: defaultValue,
       required: required,
     )
       ..parentIdKey = parentIdKey ?? this.parentIdKey
-      ..dependentsAddedBy = dependentsAddedBy ?? this.dependentsAddedBy
-      ..type = type;
+      ..dependentsAddedBy = dependentsAddedBy ?? this.dependentsAddedBy;
 
     newSchema.items = items
-        .map((e) => e.copyWith(
-              id: e.id,
-              parentIdKey: newSchema.idKey,
-              dependentsAddedBy: newSchema.dependentsAddedBy,
-            ))
+        .map(
+          (e) => e.copyWith(
+            id: e.id,
+            parentIdKey: newSchema.idKey,
+            dependentsAddedBy: newSchema.dependentsAddedBy,
+          ),
+        )
         .toList();
 
     return newSchema;
@@ -78,6 +87,7 @@ class SchemaArray extends Schema {
 
   // it allow us
   dynamic itemsBaseSchema;
+  dynamic defaultValue;
 
   int? minItems;
   int? maxItems;
@@ -99,6 +109,7 @@ class SchemaArray extends Schema {
       format: PropertyFormat.dataurl,
       required: required,
       description: description,
+      defaultValue: defaultValue,
     )
       ..parentIdKey = parentIdKey
       ..dependentsAddedBy = dependentsAddedBy
