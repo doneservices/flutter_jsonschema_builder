@@ -3,31 +3,26 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter_jsonschema_builder/src/builder/field_header_widget.dart';
 import 'package:flutter_jsonschema_builder/src/builder/logic/widget_builder_logic.dart';
 import 'package:flutter_jsonschema_builder/src/fields/fields.dart';
+import 'package:flutter_jsonschema_builder/src/models/models.dart';
 
 import './shared.dart';
-import '../models/models.dart';
 
 class FileJFormField extends PropertyFieldWidget<dynamic> {
   const FileJFormField({
-    Key? key,
-    required SchemaProperty property,
-    required final ValueSetter<dynamic> onSaved,
-    ValueChanged<dynamic>? onChanged,
+    super.key,
+    required super.property,
+    required super.onSaved,
+    super.onChanged,
     required this.fileHandler,
     this.initialFileValueHandler,
-    final String? Function(dynamic)? customValidator,
-  }) : super(
-         key: key,
-         property: property,
-         onSaved: onSaved,
-         onChanged: onChanged,
-         customValidator: customValidator,
-       );
+    super.customValidator,
+    super.decoration,
+  });
 
   final Future<List<SchemaFormFile>?> Function(SchemaProperty property)
-  fileHandler;
+      fileHandler;
   final Future<List<SchemaFormFile>?> Function(dynamic initialValue)?
-  initialFileValueHandler;
+      initialFileValueHandler;
 
   @override
   _FileJFormFieldState createState() => _FileJFormFieldState();
@@ -128,8 +123,7 @@ class _FileJFormFieldState extends State<FileJFormField> {
   }
 
   Future<void> _triggerInitialValue() async {
-    final shouldTrigger =
-        !hasTriggeredInitialValue &&
+    final shouldTrigger = !hasTriggeredInitialValue &&
         widget.initialFileValueHandler != null &&
         widget.property.defaultValue != null;
     if (shouldTrigger) {
@@ -182,10 +176,10 @@ class _FileJFormFieldState extends State<FileJFormField> {
 
     return ElevatedButton(
       onPressed: _onTap,
-      child: const Text('Add File'),
       style: ButtonStyle(
         minimumSize: WidgetStateProperty.all(const Size(double.infinity, 40)),
       ),
+      child: const Text('Add File'),
     );
   }
 }

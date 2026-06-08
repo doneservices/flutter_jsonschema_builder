@@ -5,22 +5,16 @@ import 'package:flutter/services.dart';
 import 'package:flutter_jsonschema_builder/src/builder/field_header_widget.dart';
 import 'package:flutter_jsonschema_builder/src/builder/logic/widget_builder_logic.dart';
 import 'package:flutter_jsonschema_builder/src/fields/fields.dart';
-import '../models/models.dart';
 
 class NumberJFormField extends PropertyFieldWidget<String?> {
   const NumberJFormField({
-    Key? key,
-    required SchemaProperty property,
-    required final ValueSetter<String?> onSaved,
-    ValueChanged<String?>? onChanged,
-    final String? Function(dynamic)? customValidator,
-  }) : super(
-          key: key,
-          property: property,
-          onSaved: onSaved,
-          onChanged: onChanged,
-          customValidator: customValidator,
-        );
+    super.key,
+    required super.property,
+    required super.onSaved,
+    super.onChanged,
+    super.customValidator,
+    super.decoration,
+  });
 
   @override
   _NumberJFormFieldState createState() => _NumberJFormFieldState();
@@ -55,6 +49,7 @@ class _NumberJFormFieldState extends State<NumberJFormField> {
             FilteringTextInputFormatter.allow(RegExp('[0-9.,]+'))
           ],
           autofocus: false,
+          initialValue: widget.property.defaultValue,
           onSaved: widget.onSaved,
           autovalidateMode: AutovalidateMode.onUserInteraction,
           readOnly: widget.property.readOnly,
@@ -86,16 +81,17 @@ class _NumberJFormFieldState extends State<NumberJFormField> {
               return widget.customValidator!(value);
             return null;
           },
-          decoration: InputDecoration(
-            helperText:
-                widget.property.help != null && widget.property.help!.isNotEmpty
+          decoration: widget.decoration ??
+              InputDecoration(
+                helperText: widget.property.help != null &&
+                        widget.property.help!.isNotEmpty
                     ? widget.property.help
                     : null,
-            errorStyle: Theme.of(context)
-                .textTheme
-                .bodyMedium!
-                .apply(color: Theme.of(context).colorScheme.error),
-          ),
+                errorStyle: Theme.of(context)
+                    .textTheme
+                    .bodyMedium!
+                    .apply(color: Theme.of(context).colorScheme.error),
+              ),
         ),
       ],
     );

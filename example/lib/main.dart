@@ -16,16 +16,14 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Flutter Demo',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
+      theme: ThemeData(primarySwatch: Colors.blue),
       home: const MyHomePage(title: 'Flutter Demo Home Page'),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({Key? key, required this.title}) : super(key: key);
+  const MyHomePage({super.key, required this.title});
 
   // This widget is the home page of your application. It is stateful, meaning
   // that it has a State object (defined below) that contains fields that affect
@@ -48,7 +46,10 @@ class _MyHomePageState extends State<MyHomePage> {
   "title": "Texto",
   "type": "object",
   "properties": {
-    
+    "name" : {
+      "type" : "string",
+      "title" : "Name"
+    },
     "files": {
       "type": "array",
       "title": "Multiple files",
@@ -96,8 +97,6 @@ class _MyHomePageState extends State<MyHomePage> {
 
   }
 }
-
-
   ''';
 
   final uiSchema = '''
@@ -111,7 +110,8 @@ class _MyHomePageState extends State<MyHomePage> {
         ''';
 
   Future<List<SchemaFormFile>?> defaultCustomFileHandler(
-      SchemaProperty property) async {
+    SchemaProperty property,
+  ) async {
     await Future.delayed(const Duration(seconds: 3));
 
     final file1 = SchemaFormFile(
@@ -154,64 +154,74 @@ class _MyHomePageState extends State<MyHomePage> {
                 onFormDataSaved: (data) {
                   inspect(data);
                 },
-                fileHandler: () => {
-                  'files': defaultCustomFileHandler,
-                  'file': (property) async {
-                    return [
-                      SchemaFormFile(
-                        name:
-                            'https://cdn.mos.cms.futurecdn.net/LEkEkAKZQjXZkzadbHHsVj-970-80.jpg',
-                        value:
-                            'https://cdn.mos.cms.futurecdn.net/LEkEkAKZQjXZkzadbHHsVj-970-80.jpg',
-                        bytes: Uint8List.fromList([]),
-                      )
-                    ];
-                  },
-                  '*': defaultCustomFileHandler
-                },
-                customPickerHandler: () => {
-                  '*': (data) async {
-                    final myEnums = data.enumm ?? [];
-                    return showDialog(
-                        context: context,
-                        builder: (context) {
-                          return Scaffold(
-                            body: Container(
-                              margin: const EdgeInsets.all(20),
-                              child: Column(
-                                children: [
-                                  const Text('My Custom Picker'),
-                                  ListView.builder(
-                                    shrinkWrap: true,
-                                    itemCount: myEnums.length,
-                                    itemBuilder: (context, index) {
-                                      return ListTile(
-                                        title: Text(data.enumNames!
-                                            .toList()[index]
-                                            .toString()),
-                                        onTap: () => Navigator.pop(
-                                            context, myEnums.toList()[index]),
-                                      );
-                                    },
-                                  ),
-                                ],
+                fileHandler:
+                    () => {
+                      'files': defaultCustomFileHandler,
+                      'file': (property) async {
+                        return [
+                          SchemaFormFile(
+                            name:
+                                'https://cdn.mos.cms.futurecdn.net/LEkEkAKZQjXZkzadbHHsVj-970-80.jpg',
+                            value:
+                                'https://cdn.mos.cms.futurecdn.net/LEkEkAKZQjXZkzadbHHsVj-970-80.jpg',
+                            bytes: Uint8List.fromList([]),
+                          ),
+                        ];
+                      },
+                      '*': defaultCustomFileHandler,
+                    },
+                customPickerHandler:
+                    () => {
+                      '*': (data) async {
+                        final myEnums = data.enumm ?? [];
+                        return showDialog(
+                          context: context,
+                          builder: (context) {
+                            return Scaffold(
+                              body: Container(
+                                margin: const EdgeInsets.all(20),
+                                child: Column(
+                                  children: [
+                                    const Text('My Custom Picker'),
+                                    ListView.builder(
+                                      shrinkWrap: true,
+                                      itemCount: myEnums.length,
+                                      itemBuilder: (context, index) {
+                                        return ListTile(
+                                          title: Text(
+                                            data.enumNames!
+                                                .toList()[index]
+                                                .toString(),
+                                          ),
+                                          onTap:
+                                              () => Navigator.pop(
+                                                context,
+                                                myEnums.toList()[index],
+                                              ),
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                          );
-                        });
-                  }
-                },
+                            );
+                          },
+                        );
+                      },
+                    },
                 jsonFormSchemaUiConfig: JsonFormSchemaUiConfig(
-                  submitButtonBuilder: (onSubmit) => TextButton.icon(
-                    onPressed: onSubmit,
-                    icon: const Icon(Icons.heart_broken),
-                    label: const Text('Enviar'),
-                  ),
-                  addItemBuilder: (onPressed, key) => TextButton.icon(
-                    onPressed: onPressed,
-                    icon: const Icon(Icons.plus_one),
-                    label: const Text('Add Item'),
-                  ),
+                  submitButtonBuilder:
+                      (onSubmit) => TextButton.icon(
+                        onPressed: onSubmit,
+                        icon: const Icon(Icons.heart_broken),
+                        label: const Text('Enviar'),
+                      ),
+                  addItemBuilder:
+                      (onPressed, key) => TextButton.icon(
+                        onPressed: onPressed,
+                        icon: const Icon(Icons.plus_one),
+                        label: const Text('Add Item'),
+                      ),
                   addFileButtonBuilder: (onPressed, property) {
                     final key = property.idKey;
                     if (['file', 'file3'].contains(key)) {
@@ -219,28 +229,43 @@ class _MyHomePageState extends State<MyHomePage> {
                         onPressed: onPressed,
                         child: Text('+ Agregar archivo $key'),
                         style: ButtonStyle(
-                            minimumSize: WidgetStateProperty.all(
-                                const Size(double.infinity, 40)),
-                            backgroundColor: WidgetStateProperty.all(
-                              const Color(0xffcee5ff),
-                            ),
-                            side: WidgetStateProperty.all(
-                                const BorderSide(color: Color(0xffafd5ff))),
-                            textStyle: WidgetStateProperty.all(
-                                const TextStyle(color: Color(0xff057afb)))),
+                          minimumSize: WidgetStateProperty.all(
+                            const Size(double.infinity, 40),
+                          ),
+                          backgroundColor: WidgetStateProperty.all(
+                            const Color(0xffcee5ff),
+                          ),
+                          side: WidgetStateProperty.all(
+                            const BorderSide(color: Color(0xffafd5ff)),
+                          ),
+                          textStyle: WidgetStateProperty.all(
+                            const TextStyle(color: Color(0xff057afb)),
+                          ),
+                        ),
                       );
                     }
 
                     return null;
                   },
+                  inputDecoration: InputDecoration(
+                    // labelText: 'Custom Input Decoration',
+                    // labelStyle: TextStyle(color: Colors.blue),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: Colors.blue),
+                    ),
+                    fillColor: Colors.blue,
+                    filled: true,
+                  ),
                 ),
-                customValidatorHandler: () => {
-                  'files': (value) {
-                    return null;
-                  }
-                },
+                customValidatorHandler:
+                    () => {
+                      'files': (value) {
+                        return null;
+                      },
+                    },
               ),
-            )
+            ),
           ],
         ),
       ),

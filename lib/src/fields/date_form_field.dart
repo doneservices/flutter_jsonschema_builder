@@ -1,27 +1,21 @@
+import 'package:extended_masked_text/extended_masked_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_jsonschema_builder/src/builder/field_header_widget.dart';
 import 'package:flutter_jsonschema_builder/src/builder/logic/widget_builder_logic.dart';
 import 'package:flutter_jsonschema_builder/src/fields/fields.dart';
 import 'package:intl/intl.dart';
-import 'package:extended_masked_text/extended_masked_text.dart';
 
-import '../models/models.dart';
 import '..//utils/date_text_input_json_formatter.dart';
 
 class DateJFormField extends PropertyFieldWidget<DateTime> {
   const DateJFormField({
-    Key? key,
-    required SchemaProperty property,
-    required final ValueSetter<DateTime?> onSaved,
-    ValueChanged<DateTime?>? onChanged,
-    final String? Function(dynamic)? customValidator,
-  }) : super(
-          key: key,
-          property: property,
-          onSaved: onSaved,
-          onChanged: onChanged,
-          customValidator: customValidator,
-        );
+    super.key,
+    required super.property,
+    required super.onSaved,
+    super.onChanged,
+    super.customValidator,
+    super.decoration,
+  });
 
   @override
   _DateJFormFieldState createState() => _DateJFormFieldState();
@@ -55,6 +49,7 @@ class _DateJFormFieldState extends State<DateJFormField> {
           key: Key(widget.property.idKey),
           controller: txtDateCtrl,
           keyboardType: TextInputType.phone,
+          initialValue: widget.property.defaultValue,
           validator: (value) {
             if (widget.property.required && (value == null || value.isEmpty)) {
               return uiConfig.requiredText ?? 'Required';
@@ -85,21 +80,22 @@ class _DateJFormFieldState extends State<DateJFormField> {
               return;
             }
           },
-          decoration: InputDecoration(
-            hintText: dateFormatString.toUpperCase(),
-            helperText:
-                widget.property.help != null && widget.property.help!.isNotEmpty
+          decoration: widget.decoration ??
+              InputDecoration(
+                hintText: dateFormatString.toUpperCase(),
+                helperText: widget.property.help != null &&
+                        widget.property.help!.isNotEmpty
                     ? widget.property.help
                     : null,
-            suffixIcon: IconButton(
-              icon: const Icon(Icons.date_range_outlined),
-              onPressed: widget.property.readOnly ? null : _openCalendar,
-            ),
-            errorStyle: Theme.of(context)
-                .textTheme
-                .bodyMedium!
-                .apply(color: Theme.of(context).colorScheme.error),
-          ),
+                suffixIcon: IconButton(
+                  icon: const Icon(Icons.date_range_outlined),
+                  onPressed: widget.property.readOnly ? null : _openCalendar,
+                ),
+                errorStyle: Theme.of(context)
+                    .textTheme
+                    .bodyMedium!
+                    .apply(color: Theme.of(context).colorScheme.error),
+              ),
         ),
       ],
     );

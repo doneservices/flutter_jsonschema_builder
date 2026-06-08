@@ -1,12 +1,10 @@
-import 'package:flutter/foundation.dart';
 import '../models/models.dart';
 // Esto transforma el JSON a Modelos
 
 enum SchemaType { string, number, boolean, integer, object, array, enumm }
 
 SchemaType schemaTypeFromString(String value) {
-  // ignore: deprecated_member_use
-  return SchemaType.values.where((e) => describeEnum(e) == value).first;
+  return SchemaType.values.where((e) => e.name == value).first;
 }
 
 class Schema {
@@ -37,7 +35,7 @@ class Schema {
     json['type'] ??= 'object';
     print('in Schema initialData: $initialData');
 
-    switch (schemaTypeFromString(json['type'])) {
+    switch (schemaTypeFromString(json['type'].toString())) {
       case SchemaType.object:
         schema = SchemaObject.fromJson(
           id,
@@ -115,7 +113,7 @@ class Schema {
 // Solucion temporal y personalizada
 class SchemaEnum extends Schema {
   SchemaEnum({required this.enumm})
-    : super(id: kNoIdKey, title: 'no-title', type: SchemaType.enumm);
+      : super(id: kNoIdKey, title: 'no-title', type: SchemaType.enumm);
 
   final List<String> enumm;
 }

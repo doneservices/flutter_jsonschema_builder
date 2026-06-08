@@ -6,19 +6,14 @@ import '../models/models.dart';
 
 class DropDownJFormField extends PropertyFieldWidget<dynamic> {
   const DropDownJFormField({
-    Key? key,
-    required SchemaProperty property,
-    required final ValueSetter<dynamic> onSaved,
-    ValueChanged<dynamic>? onChanged,
+    super.key,
+    required super.property,
+    required super.onSaved,
+    super.onChanged,
     this.customPickerHandler,
-    final String? Function(dynamic)? customValidator,
-  }) : super(
-          key: key,
-          property: property,
-          onSaved: onSaved,
-          onChanged: onChanged,
-          customValidator: customValidator,
-        );
+    super.customValidator,
+    super.decoration,
+  });
 
   final Future<dynamic> Function(SchemaProperty)? customPickerHandler;
   @override
@@ -94,12 +89,13 @@ class _DropDownJFormFieldState extends State<DropDownJFormField> {
                       .titleMedium!
                       .apply(color: Colors.grey)
                   : Theme.of(context).textTheme.titleMedium,
-              decoration: InputDecoration(
-                errorStyle: Theme.of(context)
-                    .textTheme
-                    .bodyMedium!
-                    .apply(color: Theme.of(context).colorScheme.error),
-              ),
+              decoration: widget.decoration ??
+                  InputDecoration(
+                    errorStyle: Theme.of(context)
+                        .textTheme
+                        .bodyMedium!
+                        .apply(color: Theme.of(context).colorScheme.error),
+                  ),
             ),
           ),
         ),
@@ -137,16 +133,5 @@ class _DropDownJFormFieldState extends State<DropDownJFormField> {
       );
     }
     return w;
-  }
-
-  Map _getItems() {
-    var data = {};
-    for (var i = 0; i < widget.property.enumm!.length; i++) {
-      final value = widget.property.enumm![i];
-      final text = widget.property.enumNames?[i] ?? value;
-      data[value] = text;
-    }
-
-    return data;
   }
 }

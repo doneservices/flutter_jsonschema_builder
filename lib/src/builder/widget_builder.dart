@@ -27,7 +27,7 @@ typedef CustomValidatorHandler = Map<String, String? Function(dynamic)?>
 
 class JsonForm extends StatefulWidget {
   const JsonForm({
-    Key? key,
+    super.key,
     required this.jsonSchema,
     required this.onFormDataSaved,
     this.showDebugElements = true,
@@ -40,7 +40,8 @@ class JsonForm extends StatefulWidget {
     this.onChanged,
     this.initialData,
     this.padding = const EdgeInsets.all(16),
-  }) : super(key: key);
+    this.inputDecoration,
+  });
 
   final String jsonSchema;
   final void Function(dynamic) onFormDataSaved;
@@ -69,6 +70,8 @@ class JsonForm extends StatefulWidget {
   /// defaults to `true`,
   /// Debug labels only show when the app is built for debugging
   final bool showDebugElements;
+
+  final InputDecoration? inputDecoration;
 
   @override
   _JsonFormState createState() => _JsonFormState();
@@ -101,6 +104,7 @@ class _JsonFormState extends State<JsonForm> {
       customValidatorHandler: widget.customValidatorHandler,
       onChanged: widget.onChanged,
       initialData: widget.initialData,
+      inputDecoration: widget.inputDecoration,
       child: Builder(builder: (context) {
         final widgetBuilderInherited = WidgetBuilderInherited.of(context);
 

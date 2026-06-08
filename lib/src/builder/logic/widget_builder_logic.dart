@@ -15,6 +15,7 @@ class WidgetBuilderInherited extends InheritedWidget {
     this.customPickerHandler,
     this.customValidatorHandler,
     this.onChanged,
+    this.inputDecoration,
     Map<String, dynamic>? initialData,
   })  : data = initialData ?? {},
         super(key: key, child: child);
@@ -28,6 +29,7 @@ class WidgetBuilderInherited extends InheritedWidget {
   final CustomValidatorHandler? customValidatorHandler;
   final ValueChanged<dynamic>? onChanged;
   late final JsonFormSchemaUiConfig uiConfig;
+  final InputDecoration? inputDecoration;
 
   void setJsonFormSchemaStyle(
       BuildContext context, JsonFormSchemaUiConfig? uiConfig) {
@@ -41,6 +43,7 @@ class WidgetBuilderInherited extends InheritedWidget {
       submitButtonBuilder: uiConfig?.submitButtonBuilder,
       addFileButtonBuilder: uiConfig?.addFileButtonBuilder,
       filesBuilder: uiConfig?.filesBuilder,
+      inputDecoration: uiConfig?.inputDecoration ?? inputDecoration,
     );
   }
 

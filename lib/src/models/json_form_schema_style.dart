@@ -12,6 +12,7 @@ class JsonFormSchemaUiConfig {
     this.filesBuilder,
     this.selectionTitle,
     this.requiredText,
+    this.inputDecoration,
   });
 
   TextAlign? titleAlign;
@@ -46,4 +47,7 @@ class JsonFormSchemaUiConfig {
   /// if it returns `null`, default files names widget will be displayed
   Widget Function(List<SchemaFormFile>? files,
       {required ValueChanged<String> onRemove})? filesBuilder;
+
+  /// decoration for text fields
+  InputDecoration? inputDecoration;
 }

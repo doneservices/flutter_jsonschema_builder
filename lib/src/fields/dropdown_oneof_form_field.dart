@@ -2,25 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_jsonschema_builder/src/builder/field_header_widget.dart';
 import 'package:flutter_jsonschema_builder/src/builder/logic/widget_builder_logic.dart';
 import 'package:flutter_jsonschema_builder/src/fields/fields.dart';
+import 'package:flutter_jsonschema_builder/src/models/models.dart';
 import 'package:flutter_jsonschema_builder/src/models/one_of_model.dart';
-import 'package:flutter_jsonschema_builder/src/models/property_schema.dart';
-import 'package:flutter_jsonschema_builder/src/models/schema.dart';
 
 class DropdownOneOfJFormField extends PropertyFieldWidget<dynamic> {
   const DropdownOneOfJFormField({
-    Key? key,
-    required SchemaProperty property,
-    required final ValueSetter<dynamic> onSaved,
-    ValueChanged<dynamic>? onChanged,
+    super.key,
+    required super.property,
+    required super.onSaved,
+    super.onChanged,
     this.customPickerHandler,
-    final String? Function(dynamic)? customValidator,
-  }) : super(
-          key: key,
-          property: property,
-          onSaved: onSaved,
-          onChanged: onChanged,
-          customValidator: customValidator,
-        );
+    super.customValidator,
+    super.decoration,
+  });
 
   final Future<dynamic> Function(SchemaProperty)? customPickerHandler;
 
@@ -112,12 +106,13 @@ class _SelectedFormFieldState extends State<DropdownOneOfJFormField> {
               items: _buildItems(),
               onChanged: _onChanged,
               onSaved: widget.onSaved,
-              decoration: InputDecoration(
-                errorStyle: Theme.of(context)
-                    .textTheme
-                    .bodyMedium!
-                    .apply(color: Theme.of(context).colorScheme.error),
-              ),
+              decoration: widget.decoration ??
+                  InputDecoration(
+                    errorStyle: Theme.of(context)
+                        .textTheme
+                        .bodyMedium!
+                        .apply(color: Theme.of(context).colorScheme.error),
+                  ),
             ),
           ),
         ),
