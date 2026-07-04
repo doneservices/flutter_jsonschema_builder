@@ -55,6 +55,15 @@ class SchemaObject extends Schema {
         case "ui:description":
           description = data as String;
           break;
+        case "ui:step":
+          uiStep = data as String;
+          break;
+        case "ui:media":
+          uiMedia = JsonFormMedia.fromJson(Map<String, dynamic>.from(data));
+          break;
+        case "ui:steps":
+          uiSteps = Map<String, dynamic>.from(data);
+          break;
         default:
           break;
       }
@@ -78,7 +87,10 @@ class SchemaObject extends Schema {
       ..dependencies = dependencies
       ..oneOf = oneOf
       ..order = order
-      ..required = required;
+      ..required = required
+      ..uiStep = uiStep
+      ..uiMedia = uiMedia
+      ..uiSteps = uiSteps;
 
     final otherProperties = properties!; //.map((p) => p.copyWith(id: p.id));
 
@@ -111,6 +123,20 @@ class SchemaObject extends Schema {
   /// A [Schema] with [oneOf] is valid if exactly one of the subschemas is valid.
   List<Schema>? oneOf;
 
+  /// step group configuration for the stepped display mode, parsed from the
+  /// root `ui:steps` block of the ui schema:
+  ///
+  /// ```json
+  /// "ui:steps": {
+  ///   "name": {
+  ///     "title": "What's your name?",
+  ///     "description": "We only use it to say hi",
+  ///     "media": {"type": "image", "src": "https://..."}
+  ///   }
+  /// }
+  /// ```
+  Map<String, dynamic>? uiSteps;
+
   void setUiSchema(Map<String, dynamic>? uiSchema) {
     if (uiSchema == null) return;
     if (properties != null && properties!.isEmpty) return;
@@ -120,10 +146,19 @@ class SchemaObject extends Schema {
 
     // set UI Schema to their properties
     properties?.forEach((_property) {
+      final nestedUiSchema = uiSchema[_property.id];
+
       if (_property is SchemaObject) {
         _property.setUi(uiSchema);
+        // apply the nested ui schema map to the object and its children
+        if (nestedUiSchema is Map<String, dynamic>) {
+          _property.setUiSchema(nestedUiSchema);
+        }
       } else if (_property is SchemaProperty) {
         _property.setUi(uiSchema);
+      } else if (_property is SchemaArray &&
+          nestedUiSchema is Map<String, dynamic>) {
+        _property.setUi(nestedUiSchema);
       }
     });
 

@@ -118,7 +118,9 @@ class SchemaProperty extends Schema {
       ..dependentsAddedBy = dependentsAddedBy ?? this.dependentsAddedBy
       ..required = required
       ..dependents = dependents
-      ..isMultipleFile = isMultipleFile;
+      ..isMultipleFile = isMultipleFile
+      ..uiStep = uiStep
+      ..uiMedia = uiMedia;
 
     return newSchema;
   }
@@ -199,6 +201,12 @@ class SchemaProperty extends Schema {
           break;
         case "ui:widget":
           widget = data as String;
+          break;
+        case "ui:step":
+          uiStep = data as String;
+          break;
+        case "ui:media":
+          uiMedia = JsonFormMedia.fromJson(Map<String, dynamic>.from(data));
           break;
         case "ui:options":
           fileType = data["fileType"];

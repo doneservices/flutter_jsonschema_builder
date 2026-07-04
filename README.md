@@ -118,6 +118,89 @@ final uiSchema = '''
 <img width="348" alt="image" src="https://user-images.githubusercontent.com/58694638/187996261-ab3be73d-35e0-40c5-a0de-47900b64f1be.png">
 
 
+### Stepped display mode
+
+`JsonForm` can walk through the form one question at a time — a
+conversational, wizard-style experience — instead of rendering everything on
+one page. Enable it with `displayMode`:
+
+```dart
+JsonForm(
+  jsonSchema: jsonSchema,
+  uiSchema: uiSchema,
+  displayMode: JsonFormDisplayMode.stepped,
+  steppedConfig: JsonFormSteppedConfig(
+    transitionAxis: Axis.vertical, // or Axis.horizontal
+    showReviewStep: true,          // summary page before submitting
+  ),
+  onFormDataSaved: (data) => inspect(data),
+)
+```
+
+The stepped mode expands to fill its parent, so give it a bounded height
+(a `Scaffold` body, `Expanded`, `SizedBox`...) instead of wrapping it in a
+scroll view. It shows a progress bar with a step counter, validates the
+current step before advancing, and keeps entered values when navigating back.
+Back/next buttons, the progress bar and all labels can be customized through
+`JsonFormSteppedConfig`; the submit button reuses
+`JsonFormSchemaUiConfig.submitButtonBuilder`.
+
+#### Defining steps
+
+By default every field is its own step, and nested objects are flattened into
+the sequence. Group fields onto a shared step with `ui:step`, keep a nested
+object together by giving the object itself a `ui:step`, and configure a
+group's title, description and media in the root `ui:steps` block:
+
+```json
+{
+  "ui:steps": {
+    "name": {
+      "title": "What should we call you?",
+      "description": "First things first — introduce yourself.",
+      "media": {"type": "image", "src": "https://example.com/hello.png"}
+    }
+  },
+  "firstName": {"ui:step": "name"},
+  "lastName": {"ui:step": "name"}
+}
+```
+
+#### Step media: images and Lottie animations
+
+Each step can show an image or an animation above its fields, declared in the
+ui schema with `ui:media` (per field) or `ui:steps.<group>.media` (per group):
+
+```json
+"email": {
+  "ui:media": {
+    "type": "image",
+    "src": "https://example.com/mail.png",
+    "height": 160,
+    "fit": "cover"
+  }
+}
+```
+
+The package renders the types `image` (network url) and `asset` (bundled
+asset) out of the box. Any other type is handed to
+`JsonFormSteppedConfig.mediaBuilder`, so the package stays dependency-free
+while apps bring their own players — e.g. Lottie:
+
+```dart
+steppedConfig: JsonFormSteppedConfig(
+  mediaBuilder: (context, media) {
+    if (media.type == 'lottie') {
+      return Lottie.asset(media.src, height: media.height ?? 160);
+    }
+    return null; // fall back to the built-in image/asset rendering
+  },
+),
+```
+
+See `example/lib/main.dart` for a runnable demo with both modes, grouped
+steps, an image step and a Lottie step.
+
 ### Custom File Handler 
 
 ```dart

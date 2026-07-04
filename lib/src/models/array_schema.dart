@@ -67,7 +67,9 @@ class SchemaArray extends Schema {
       required: required,
     )
       ..parentIdKey = parentIdKey ?? this.parentIdKey
-      ..dependentsAddedBy = dependentsAddedBy ?? this.dependentsAddedBy;
+      ..dependentsAddedBy = dependentsAddedBy ?? this.dependentsAddedBy
+      ..uiStep = uiStep
+      ..uiMedia = uiMedia;
 
     newSchema.items = items
         .map(
@@ -80,6 +82,27 @@ class SchemaArray extends Schema {
         .toList();
 
     return newSchema;
+  }
+
+  void setUi(Map<String, dynamic> uiSchema) {
+    uiSchema.forEach((key, data) {
+      switch (key) {
+        case "ui:title":
+          title = data as String;
+          break;
+        case "ui:description":
+          description = data as String;
+          break;
+        case "ui:step":
+          uiStep = data as String;
+          break;
+        case "ui:media":
+          uiMedia = JsonFormMedia.fromJson(Map<String, dynamic>.from(data));
+          break;
+        default:
+          break;
+      }
+    });
   }
 
   /// can be array of [Schema] or [Schema]

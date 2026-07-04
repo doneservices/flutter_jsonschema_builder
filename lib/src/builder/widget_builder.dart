@@ -9,9 +9,21 @@ import 'package:flutter_jsonschema_builder/src/builder/array_schema_builder.dart
 import 'package:flutter_jsonschema_builder/src/builder/logic/widget_builder_logic.dart';
 import 'package:flutter_jsonschema_builder/src/builder/object_schema_builder.dart';
 import 'package:flutter_jsonschema_builder/src/builder/property_schema_builder.dart';
+import 'package:flutter_jsonschema_builder/src/builder/stepped_form_builder.dart';
 import 'package:flutter_jsonschema_builder/src/models/json_form_schema_style.dart';
+import 'package:flutter_jsonschema_builder/src/models/stepped_form_config.dart';
 
 import '../models/models.dart';
+
+/// How [JsonForm] lays out the schema.
+enum JsonFormDisplayMode {
+  /// all fields on a single scrolling page with a submit button at the end
+  fullForm,
+
+  /// one step at a time with progress, back/next navigation and optional
+  /// `ui:media` per step; see [JsonFormSteppedConfig]
+  stepped,
+}
 
 typedef FileHandler = Map<String,
         Future<List<SchemaFormFile>?> Function(SchemaProperty property)?>
@@ -41,6 +53,8 @@ class JsonForm extends StatefulWidget {
     this.initialData,
     this.padding = const EdgeInsets.all(16),
     this.inputDecoration,
+    this.displayMode = JsonFormDisplayMode.fullForm,
+    this.steppedConfig = const JsonFormSteppedConfig(),
   });
 
   final String jsonSchema;
@@ -72,6 +86,17 @@ class JsonForm extends StatefulWidget {
   final bool showDebugElements;
 
   final InputDecoration? inputDecoration;
+
+  /// [JsonFormDisplayMode.fullForm] renders every field on one page,
+  /// [JsonFormDisplayMode.stepped] walks through the form one step at a time.
+  ///
+  /// Note: the stepped mode expands to fill its parent and needs a bounded
+  /// height; don't place it inside an unconstrained scroll view.
+  final JsonFormDisplayMode displayMode;
+
+  /// customization of the stepped display mode; only used when [displayMode]
+  /// is [JsonFormDisplayMode.stepped]
+  final JsonFormSteppedConfig steppedConfig;
 
   @override
   _JsonFormState createState() => _JsonFormState();
@@ -107,6 +132,17 @@ class _JsonFormState extends State<JsonForm> {
       inputDecoration: widget.inputDecoration,
       child: Builder(builder: (context) {
         final widgetBuilderInherited = WidgetBuilderInherited.of(context);
+
+        if (widget.displayMode == JsonFormDisplayMode.stepped) {
+          return SteppedFormBuilder(
+            mainSchema: mainSchema,
+            config: widget.steppedConfig,
+            showDebugElements: widget.showDebugElements,
+            padding: widget.padding,
+            onSubmit: () =>
+                widget.onFormDataSaved(widgetBuilderInherited.data),
+          );
+        }
 
         return Form(
           key: _formKey,
