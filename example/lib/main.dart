@@ -24,14 +24,25 @@ class MyApp extends StatelessWidget {
   }
 }
 
+/// A plain JSON schema that works in both display modes: the nested `name`
+/// object renders as a titled section in classic mode and becomes a single
+/// step (with the same title and description) in stepped mode.
 const demoJsonSchema = '''
 {
   "title": "Tell us about you",
   "type": "object",
-  "required": ["firstName", "email", "topic"],
+  "required": ["email", "topic"],
   "properties": {
-    "firstName": {"type": "string", "title": "First name"},
-    "lastName": {"type": "string", "title": "Last name"},
+    "name": {
+      "type": "object",
+      "title": "What should we call you?",
+      "description": "First things first — introduce yourself.",
+      "required": ["first"],
+      "properties": {
+        "first": {"type": "string", "title": "First name"},
+        "last": {"type": "string", "title": "Last name"}
+      }
+    },
     "email": {"type": "string", "title": "Email", "format": "email", "minLength": 5},
     "topic": {
       "type": "string",
@@ -51,20 +62,13 @@ const demoJsonSchema = '''
 }
 ''';
 
-/// `ui:step` groups fields onto a shared step, the root `ui:steps` block
-/// configures each group, and `ui:media` attaches an image or animation to
-/// a field's step. Everything is plain JSON, so a backend can define it.
+/// The only step-specific ui schema addition is `ui:media`, which attaches
+/// an image or animation to a field's or object's step.
 const demoUiSchema = '''
 {
-  "ui:steps": {
-    "name": {
-      "title": "What should we call you?",
-      "description": "First things first — introduce yourself.",
-      "media": {"type": "lottie", "src": "assets/pulse.json", "height": 160}
-    }
+  "name": {
+    "ui:media": {"type": "lottie", "src": "assets/pulse.json", "height": 160}
   },
-  "firstName": {"ui:step": "name"},
-  "lastName": {"ui:step": "name"},
   "email": {
     "ui:media": {"type": "asset", "src": "assets/gradient.png", "height": 150, "fit": "cover"}
   },

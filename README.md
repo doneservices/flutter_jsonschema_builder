@@ -147,20 +147,42 @@ Back/next buttons, the progress bar and all labels can be customized through
 
 #### Defining steps
 
-By default every field is its own step, and nested objects are flattened into
-the sequence. Group fields onto a shared step with `ui:step`, keep a nested
-object together by giving the object itself a `ui:step`, and configure a
-group's title, description and media in the root `ui:steps` block:
+Steps are derived from the structure of the JSON schema itself — a plain
+schema works in both display modes without any ui schema:
+
+* every scalar field and every array is its own step
+* a nested object becomes a single step holding all its fields, and the
+  object's own `title` and `description` render as the step's header — the
+  same title and description classic mode shows as a section header
 
 ```json
 {
-  "ui:steps": {
+  "type": "object",
+  "properties": {
     "name": {
+      "type": "object",
       "title": "What should we call you?",
       "description": "First things first — introduce yourself.",
-      "media": {"type": "image", "src": "https://example.com/hello.png"}
-    }
-  },
+      "required": ["first"],
+      "properties": {
+        "first": {"type": "string", "title": "First name"},
+        "last": {"type": "string", "title": "Last name"}
+      }
+    },
+    "email": {"type": "string", "title": "Email", "format": "email"}
+  }
+}
+```
+
+produces two steps — "What should we call you?" with both name fields, then
+email — and the submitted data mirrors the schema:
+`{"name": {"first": ..., "last": ...}, "email": ...}`.
+
+If your data contract requires flat fields but you still want them to share
+a step, `ui:step` groups flat siblings without changing the data shape:
+
+```json
+{
   "firstName": {"ui:step": "name"},
   "lastName": {"ui:step": "name"}
 }
@@ -169,7 +191,7 @@ group's title, description and media in the root `ui:steps` block:
 #### Step media: images and Lottie animations
 
 Each step can show an image or an animation above its fields, declared in the
-ui schema with `ui:media` (per field) or `ui:steps.<group>.media` (per group):
+ui schema with `ui:media` on a field or on a nested object:
 
 ```json
 "email": {
@@ -200,6 +222,39 @@ steppedConfig: JsonFormSteppedConfig(
 
 See `example/lib/main.dart` for a runnable demo with both modes, grouped
 steps, an image step and a Lottie step.
+
+#### Customizing the stepped mode
+
+Customization follows the usual Flutter layering — most apps need nothing
+beyond their existing theme:
+
+1. **Ambient `Theme`** — the defaults are built from `Theme.of(context)`:
+   the progress bar honors `ProgressIndicatorThemeData` and
+   `ColorScheme.primary`, step titles/descriptions use
+   `TextTheme.headlineSmall`/`bodyMedium`, and the navigation buttons are
+   plain `ElevatedButton`/`TextButton`, so `ElevatedButtonThemeData` etc.
+   apply. A themed app gets a matching stepped form with zero configuration.
+2. **`JsonFormSteppedConfig`** — behavior and text: transition axis,
+   duration and curve, review step, button labels, and explicit
+   `stepTitleStyle`/`stepDescriptionStyle` overrides (widget style beats
+   theme, as with Material widgets).
+3. **Builders** — replace whole pieces when styling isn't enough:
+   `progressBuilder`, `mediaBuilder`, `nextButtonBuilder`,
+   `backButtonBuilder`, and the existing
+   `JsonFormSchemaUiConfig.submitButtonBuilder` for the final button.
+
+The default building blocks are exported as plain widgets —
+`JsonFormStepProgress`, `JsonFormStepHeader`, `JsonFormStepMedia` — so a
+builder override can compose them instead of starting from scratch:
+
+```dart
+steppedConfig: JsonFormSteppedConfig(
+  progressBuilder: (context, current, total) => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 32),
+    child: JsonFormStepProgress(currentStep: current, totalSteps: total),
+  ),
+),
+```
 
 ### Custom File Handler 
 

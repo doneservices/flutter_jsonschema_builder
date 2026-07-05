@@ -19,7 +19,7 @@ class JsonFormStep {
     required this.entries,
   });
 
-  /// the `ui:step` group name, or the schema's idKey for ungrouped steps.
+  /// the schema's idKey, or the `ui:step` group name for grouped steps.
   /// Stable across re-extractions, used to keep the current position when
   /// dependencies mutate the schema tree.
   final String id;
@@ -30,33 +30,30 @@ class JsonFormStep {
   final List<JsonFormStepEntry> entries;
 }
 
-/// Walks the schema tree and maps it to a list of steps:
+/// Maps a plain JSON schema to a list of steps — no ui schema required:
 ///
-/// * every leaf property and every array is its own step by default
-/// * schemas sharing a `ui:step` group name are combined into one step,
-///   placed where the group first occurs
-/// * nested objects are flattened into the sequence, unless the object
-///   itself declares `ui:step`, which keeps it together on a single step
-/// * step title/description/media for groups come from the root `ui:steps`
-///   block, falling back to the first `ui:media` found among the entries
+/// * every scalar property and every array is its own step
+/// * a nested object becomes a single step holding all its fields, titled
+///   by the object's own `title`/`description` (the same ones classic mode
+///   renders as a section header)
+/// * `ui:media` on a field or object attaches media to its step
+/// * optionally, flat sibling fields sharing a `ui:step` group name are
+///   combined onto one step (placed where the group first occurs) — for
+///   grouping without changing the shape of the produced data
 List<JsonFormStep> extractJsonFormSteps(SchemaObject root) {
   final steps = <JsonFormStep>[];
   final stepIndexByGroup = <String, int>{};
-  final uiSteps = root.uiSteps ?? const <String, dynamic>{};
 
-  void add(Schema schema, SchemaObject parent) {
+  void addToGroup(Schema schema, SchemaObject parent, String group) {
     final entry = JsonFormStepEntry(schema: schema, parent: parent);
-    final group = schema.uiStep;
+    final existingIndex = stepIndexByGroup[group];
 
-    final existingIndex = group != null ? stepIndexByGroup[group] : null;
     if (existingIndex != null) {
       final existing = steps[existingIndex];
       existing.entries.add(entry);
       if (existing.media == null && schema.uiMedia != null) {
         steps[existingIndex] = JsonFormStep(
           id: existing.id,
-          title: existing.title,
-          description: existing.description,
           media: schema.uiMedia,
           entries: existing.entries,
         );
@@ -64,35 +61,40 @@ List<JsonFormStep> extractJsonFormSteps(SchemaObject root) {
       return;
     }
 
-    final groupConfig =
-        group != null && uiSteps[group] is Map ? uiSteps[group] as Map : null;
-    final groupMedia = groupConfig?['media'] is Map
-        ? JsonFormMedia.fromJson(
-            Map<String, dynamic>.from(groupConfig!['media']))
-        : null;
-
-    if (group != null) stepIndexByGroup[group] = steps.length;
+    stepIndexByGroup[group] = steps.length;
     steps.add(JsonFormStep(
       // prefixed so a group name can never collide with a field's idKey
-      id: group != null ? 'step-group:$group' : schema.idKey,
-      title: groupConfig?['title'] as String?,
-      description: groupConfig?['description'] as String?,
-      media: groupMedia ?? schema.uiMedia,
+      id: 'step-group:$group',
+      media: schema.uiMedia,
       entries: [entry],
     ));
   }
 
-  void walk(SchemaObject object) {
-    for (final child in object.properties ?? const <Schema>[]) {
-      if (child is SchemaObject && child.uiStep == null) {
-        walk(child);
-      } else {
-        add(child, object);
-      }
+  for (final child in root.properties ?? const <Schema>[]) {
+    if (child is SchemaObject) {
+      final entries = (child.properties ?? const <Schema>[])
+          .map((schema) => JsonFormStepEntry(schema: schema, parent: child))
+          .toList();
+      if (entries.isEmpty) continue;
+
+      steps.add(JsonFormStep(
+        id: child.idKey,
+        title: child.title != kNoTitle ? child.title : null,
+        description: child.description,
+        media: child.uiMedia,
+        entries: entries,
+      ));
+    } else if (child.uiStep != null) {
+      addToGroup(child, root, child.uiStep!);
+    } else {
+      steps.add(JsonFormStep(
+        id: child.idKey,
+        media: child.uiMedia,
+        entries: [JsonFormStepEntry(schema: child, parent: root)],
+      ));
     }
   }
 
-  walk(root);
   return steps;
 }
 

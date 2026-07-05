@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_jsonschema_builder/src/builder/logic/object_schema_logic.dart';
 import 'package:flutter_jsonschema_builder/src/builder/logic/widget_builder_logic.dart';
+import 'package:flutter_jsonschema_builder/src/builder/stepped_form_widgets.dart';
 import 'package:flutter_jsonschema_builder/src/builder/widget_builder.dart';
-import 'package:flutter_jsonschema_builder/src/models/json_form_schema_style.dart';
 import 'package:flutter_jsonschema_builder/src/models/models.dart';
 import 'package:flutter_jsonschema_builder/src/models/stepped_form_config.dart';
 
@@ -144,8 +144,6 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
 
   @override
   Widget build(BuildContext context) {
-    final uiConfig = WidgetBuilderInherited.of(context).uiConfig;
-
     return LayoutBuilder(builder: (context, constraints) {
       assert(
         constraints.hasBoundedHeight,
@@ -154,12 +152,25 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
         'Do not place it inside an unconstrained scroll view.',
       );
 
+      final totalPages = _pageCount > 0 ? _pageCount : 1;
+
       return Padding(
         padding: widget.padding,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildProgress(context),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: config.progressBuilder != null
+                  ? config.progressBuilder!(
+                      context, _currentPage + 1, totalPages)
+                  : JsonFormStepProgress(
+                      currentStep: _currentPage + 1,
+                      totalSteps: totalPages,
+                      duration: config.transitionDuration,
+                      curve: config.transitionCurve,
+                    ),
+            ),
             Expanded(
               child: PageView.builder(
                 controller: _pageController,
@@ -175,61 +186,64 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
                 },
                 itemBuilder: (context, index) {
                   if (index >= _steps.length) {
-                    return KeyedSubtree(
+                    return _ReviewPage(
                       key: const ValueKey<String>(_reviewPageId),
-                      child: _buildReviewPage(context),
+                      steps: _steps,
+                      config: config,
+                      onEditStep: _animateToPage,
                     );
                   }
                   final step = _steps[index];
                   return _KeepAlivePage(
                     key: ValueKey<String>(step.id),
-                    child: _buildStepPage(context, step),
+                    child: _StepPage(
+                      step: step,
+                      formKey: _formKeyFor(step),
+                      mainSchema: widget.mainSchema,
+                      config: config,
+                      showDebugElements: widget.showDebugElements,
+                      onSchemaEvent: _onObjectSchemaEvent,
+                    ),
                   );
                 },
               ),
             ),
-            _buildControls(context, uiConfig),
+            _StepControls(
+              config: config,
+              isFirstPage: _currentPage == 0,
+              isLastPage: _currentPage >= _pageCount - 1,
+              onBack: _goBack,
+              onNext: _goNext,
+              onSubmit: _trySubmit,
+            ),
           ],
         ),
       );
     });
   }
+}
 
-  Widget _buildProgress(BuildContext context) {
-    final totalPages = _pageCount > 0 ? _pageCount : 1;
-    if (config.progressBuilder != null) {
-      return config.progressBuilder!(context, _currentPage + 1, totalPages);
-    }
+/// One step of the form: media, header and the step's fields wrapped in
+/// their own [Form] so navigation can validate just this step.
+class _StepPage extends StatelessWidget {
+  const _StepPage({
+    required this.step,
+    required this.formKey,
+    required this.mainSchema,
+    required this.config,
+    required this.showDebugElements,
+    required this.onSchemaEvent,
+  });
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        children: [
-          Expanded(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: TweenAnimationBuilder<double>(
-                tween: Tween(end: (_currentPage + 1) / totalPages),
-                duration: config.transitionDuration,
-                curve: config.transitionCurve,
-                builder: (context, value, _) =>
-                    LinearProgressIndicator(value: value, minHeight: 4),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Text(
-            '${_currentPage + 1} / $totalPages',
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-        ],
-      ),
-    );
-  }
+  final JsonFormStep step;
+  final GlobalKey<FormState> formKey;
+  final SchemaObject mainSchema;
+  final JsonFormSteppedConfig config;
+  final bool showDebugElements;
+  final ValueSetter<ObjectSchemaEvent?> onSchemaEvent;
 
-  Widget _buildStepPage(BuildContext context, JsonFormStep step) {
-    final textTheme = Theme.of(context).textTheme;
-
+  @override
+  Widget build(BuildContext context) {
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Column(
@@ -238,29 +252,33 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
           if (step.media != null)
             Padding(
               padding: const EdgeInsets.only(bottom: 16),
-              child: Center(child: _buildMedia(context, step.media!)),
+              child: Center(
+                child: JsonFormStepMedia(
+                  media: step.media!,
+                  builder: config.mediaBuilder,
+                ),
+              ),
             ),
-          if (step.title != null)
-            Text(step.title!, style: textTheme.headlineSmall),
-          if (step.description != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Text(step.description!, style: textTheme.bodyMedium),
-            ),
+          JsonFormStepHeader(
+            title: step.title,
+            description: step.description,
+            titleStyle: config.stepTitleStyle,
+            descriptionStyle: config.stepDescriptionStyle,
+          ),
           Form(
-            key: _formKeyFor(step),
+            key: formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 for (final entry in step.entries)
                   ObjectSchemaInherited(
                     schemaObject: entry.parent,
-                    listen: _onObjectSchemaEvent,
+                    listen: onSchemaEvent,
                     child: FormFromSchemaBuilder(
-                      mainSchema: widget.mainSchema,
+                      mainSchema: mainSchema,
                       schema: entry.schema,
                       schemaObject: entry.parent,
-                      showDebugElements: widget.showDebugElements,
+                      showDebugElements: showDebugElements,
                     ),
                   ),
               ],
@@ -270,58 +288,40 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
       ),
     );
   }
+}
 
-  Widget _buildMedia(BuildContext context, JsonFormMedia media) {
-    final custom = config.mediaBuilder?.call(context, media);
-    if (custom != null) return custom;
+/// Summary of every answer with tap-to-edit, shown after the last step when
+/// [JsonFormSteppedConfig.showReviewStep] is enabled.
+class _ReviewPage extends StatelessWidget {
+  const _ReviewPage({
+    super.key,
+    required this.steps,
+    required this.config,
+    required this.onEditStep,
+  });
 
-    final height = media.height ?? 200.0;
-    switch (media.type) {
-      case 'image':
-        return Image.network(
-          media.src,
-          height: height,
-          fit: media.fit,
-          errorBuilder: (_, __, ___) => SizedBox(height: height),
-        );
-      case 'asset':
-        return Image.asset(
-          media.src,
-          height: height,
-          fit: media.fit,
-          errorBuilder: (_, __, ___) => SizedBox(height: height),
-        );
-      default:
-        assert(() {
-          debugPrint(
-            'JsonForm: no mediaBuilder handled ui:media type "${media.type}" '
-            '(src: ${media.src}), nothing will be rendered for it.',
-          );
-          return true;
-        }());
-        return const SizedBox.shrink();
-    }
-  }
+  final List<JsonFormStep> steps;
+  final JsonFormSteppedConfig config;
+  final ValueSetter<int> onEditStep;
 
-  Widget _buildReviewPage(BuildContext context) {
-    final widgetBuilderInherited = WidgetBuilderInherited.of(context);
-    final textTheme = Theme.of(context).textTheme;
+  @override
+  Widget build(BuildContext context) {
+    final data = WidgetBuilderInherited.of(context).data;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(config.reviewTitle, style: textTheme.headlineSmall),
-          if (config.reviewDescription != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Text(config.reviewDescription!,
-                  style: textTheme.bodyMedium),
-            ),
+          JsonFormStepHeader(
+            title: config.reviewTitle,
+            description: config.reviewDescription,
+            titleStyle: config.stepTitleStyle,
+            descriptionStyle: config.stepDescriptionStyle,
+          ),
           const SizedBox(height: 12),
-          for (var i = 0; i < _steps.length; i++)
-            for (final entry in _steps[i].entries)
+          for (var i = 0; i < steps.length; i++)
+            for (final entry in steps[i].entries)
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 title: Text(
@@ -329,17 +329,17 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
                       ? entry.schema.title
                       : entry.schema.id,
                 ),
-                subtitle: Text(_formatReviewValue(jsonFormDataAtPath(
-                    widgetBuilderInherited.data, entry.schema.idKey))),
+                subtitle: Text(_formatValue(
+                    jsonFormDataAtPath(data, entry.schema.idKey))),
                 trailing: const Icon(Icons.edit_outlined, size: 20),
-                onTap: () => _animateToPage(i),
+                onTap: () => onEditStep(i),
               ),
         ],
       ),
     );
   }
 
-  String _formatReviewValue(dynamic value) {
+  String _formatValue(dynamic value) {
     if (value == null || (value is String && value.isEmpty)) {
       return config.emptyValueText;
     }
@@ -352,25 +352,45 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
     }
     return value.toString();
   }
+}
 
-  Widget _buildControls(
-      BuildContext context, JsonFormSchemaUiConfig uiConfig) {
-    final isLastPage = _currentPage >= _pageCount - 1;
+/// Back/next navigation row; the next button becomes the submit button on
+/// the last page, honoring [JsonFormSchemaUiConfig.submitButtonBuilder].
+class _StepControls extends StatelessWidget {
+  const _StepControls({
+    required this.config,
+    required this.isFirstPage,
+    required this.isLastPage,
+    required this.onBack,
+    required this.onNext,
+    required this.onSubmit,
+  });
+
+  final JsonFormSteppedConfig config;
+  final bool isFirstPage;
+  final bool isLastPage;
+  final VoidCallback onBack;
+  final VoidCallback onNext;
+  final ValueGetter<bool> onSubmit;
+
+  @override
+  Widget build(BuildContext context) {
+    final uiConfig = WidgetBuilderInherited.of(context).uiConfig;
     final isVertical = config.transitionAxis == Axis.vertical;
 
     Widget nextButton;
     if (isLastPage) {
       nextButton = uiConfig.submitButtonBuilder != null
-          ? uiConfig.submitButtonBuilder!(_trySubmit)
+          ? uiConfig.submitButtonBuilder!(onSubmit)
           : ElevatedButton(
-              onPressed: _trySubmit,
+              onPressed: onSubmit,
               child: Text(config.submitButtonText),
             );
     } else {
       nextButton = config.nextButtonBuilder != null
-          ? config.nextButtonBuilder!(_goNext)
+          ? config.nextButtonBuilder!(onNext)
           : ElevatedButton.icon(
-              onPressed: _goNext,
+              onPressed: onNext,
               icon: Icon(isVertical
                   ? Icons.keyboard_arrow_down
                   : Icons.keyboard_arrow_right),
@@ -383,11 +403,11 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          if (_currentPage > 0)
+          if (!isFirstPage)
             config.backButtonBuilder != null
-                ? config.backButtonBuilder!(_goBack)
+                ? config.backButtonBuilder!(onBack)
                 : TextButton.icon(
-                    onPressed: _goBack,
+                    onPressed: onBack,
                     icon: Icon(isVertical
                         ? Icons.keyboard_arrow_up
                         : Icons.keyboard_arrow_left),

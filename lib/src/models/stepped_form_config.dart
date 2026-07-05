@@ -32,6 +32,8 @@ class JsonFormSteppedConfig {
     this.reviewTitle = 'Review your answers',
     this.reviewDescription,
     this.emptyValueText = '—',
+    this.stepTitleStyle,
+    this.stepDescriptionStyle,
   });
 
   /// [Axis.vertical] slides the next step in from below,
@@ -74,4 +76,12 @@ class JsonFormSteppedConfig {
 
   /// shown on the review step for questions without an answer
   final String emptyValueText;
+
+  /// style of step titles, defaults to [TextTheme.headlineSmall] of the
+  /// ambient theme
+  final TextStyle? stepTitleStyle;
+
+  /// style of step descriptions, defaults to [TextTheme.bodyMedium] of the
+  /// ambient theme
+  final TextStyle? stepDescriptionStyle;
 }

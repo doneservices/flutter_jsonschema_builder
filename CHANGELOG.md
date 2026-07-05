@@ -3,10 +3,14 @@
 * Added `JsonFormDisplayMode.stepped`: a step-by-step display mode with
   progress bar, per-step validation, vertical/horizontal transitions and an
   optional review step (`JsonFormSteppedConfig`)
-* Added `ui:step`, root `ui:steps` and `ui:media` ui schema keys for grouping
-  fields into steps and attaching images or animations to them
-* Added `JsonFormSteppedConfig.mediaBuilder` for custom media types
+* Steps derive from the schema structure: scalar fields get their own step,
+  nested objects become one step titled by the object's own title and
+  description, so a plain JSON schema works in both display modes
+* Added the `ui:media` ui schema key for attaching images or animations to a
+  step, and `JsonFormSteppedConfig.mediaBuilder` for custom media types
   (e.g. Lottie) without adding package dependencies
+* Added the optional `ui:step` ui schema key to group flat sibling fields
+  onto one step without changing the shape of the produced data
 * Nested ui schema maps are now applied to nested objects and arrays
 
 ## 0.1.3
