@@ -178,16 +178,6 @@ produces two steps — "What should we call you?" with both name fields, then
 email — and the submitted data mirrors the schema:
 `{"name": {"first": ..., "last": ...}, "email": ...}`.
 
-If your data contract requires flat fields but you still want them to share
-a step, `ui:step` groups flat siblings without changing the data shape:
-
-```json
-{
-  "firstName": {"ui:step": "name"},
-  "lastName": {"ui:step": "name"}
-}
-```
-
 #### Step media: images and Lottie animations
 
 Each step can show an image or an animation above its fields, declared in the

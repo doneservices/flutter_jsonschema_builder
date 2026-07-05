@@ -46,9 +46,6 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
 
   int get _pageCount => _steps.length + (config.showReviewStep ? 1 : 0);
 
-  bool get _isOnReviewPage =>
-      config.showReviewStep && _currentPage >= _steps.length;
-
   String _pageId(int page) =>
       page < _steps.length ? _steps[page].id : _reviewPageId;
 
@@ -90,7 +87,7 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
   }
 
   bool _validateAndSaveCurrent() {
-    if (_isOnReviewPage || _currentPage >= _steps.length) return true;
+    if (_currentPage >= _steps.length) return true;
 
     final formState = _formKeys[_steps[_currentPage].id]?.currentState;
     if (formState == null) return true;
@@ -341,7 +338,7 @@ class _ReviewPage extends StatelessWidget {
 
   String _formatValue(dynamic value) {
     if (value == null || (value is String && value.isEmpty)) {
-      return config.emptyValueText;
+      return '—';
     }
     if (value is Map || value is List) {
       try {

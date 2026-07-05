@@ -30,9 +30,9 @@ class JsonFormMedia {
   factory JsonFormMedia.fromJson(Map<String, dynamic> json) {
     return JsonFormMedia(
       type: json['type'] as String? ?? 'image',
-      src: (json['src'] ?? json['url'] ?? '') as String,
+      src: json['src'] as String? ?? '',
       height: (json['height'] as num?)?.toDouble(),
-      fit: _boxFitFromString(json['fit'] as String?),
+      fit: BoxFit.values.asNameMap()[json['fit']] ?? BoxFit.contain,
     );
   }
 
@@ -46,11 +46,4 @@ class JsonFormMedia {
   final double? height;
 
   final BoxFit fit;
-
-  static BoxFit _boxFitFromString(String? value) {
-    return BoxFit.values.firstWhere(
-      (fit) => fit.name == value,
-      orElse: () => BoxFit.contain,
-    );
-  }
 }

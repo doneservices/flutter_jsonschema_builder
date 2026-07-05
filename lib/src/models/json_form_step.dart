@@ -19,9 +19,8 @@ class JsonFormStep {
     required this.entries,
   });
 
-  /// the schema's idKey, or the `ui:step` group name for grouped steps.
-  /// Stable across re-extractions, used to keep the current position when
-  /// dependencies mutate the schema tree.
+  /// the schema's idKey; stable across re-extractions, used to keep the
+  /// current position when dependencies mutate the schema tree
   final String id;
 
   final String? title;
@@ -37,38 +36,8 @@ class JsonFormStep {
 ///   by the object's own `title`/`description` (the same ones classic mode
 ///   renders as a section header)
 /// * `ui:media` on a field or object attaches media to its step
-/// * optionally, flat sibling fields sharing a `ui:step` group name are
-///   combined onto one step (placed where the group first occurs) — for
-///   grouping without changing the shape of the produced data
 List<JsonFormStep> extractJsonFormSteps(SchemaObject root) {
   final steps = <JsonFormStep>[];
-  final stepIndexByGroup = <String, int>{};
-
-  void addToGroup(Schema schema, SchemaObject parent, String group) {
-    final entry = JsonFormStepEntry(schema: schema, parent: parent);
-    final existingIndex = stepIndexByGroup[group];
-
-    if (existingIndex != null) {
-      final existing = steps[existingIndex];
-      existing.entries.add(entry);
-      if (existing.media == null && schema.uiMedia != null) {
-        steps[existingIndex] = JsonFormStep(
-          id: existing.id,
-          media: schema.uiMedia,
-          entries: existing.entries,
-        );
-      }
-      return;
-    }
-
-    stepIndexByGroup[group] = steps.length;
-    steps.add(JsonFormStep(
-      // prefixed so a group name can never collide with a field's idKey
-      id: 'step-group:$group',
-      media: schema.uiMedia,
-      entries: [entry],
-    ));
-  }
 
   for (final child in root.properties ?? const <Schema>[]) {
     if (child is SchemaObject) {
@@ -84,8 +53,6 @@ List<JsonFormStep> extractJsonFormSteps(SchemaObject root) {
         media: child.uiMedia,
         entries: entries,
       ));
-    } else if (child.uiStep != null) {
-      addToGroup(child, root, child.uiStep!);
     } else {
       steps.add(JsonFormStep(
         id: child.idKey,
@@ -103,16 +70,8 @@ List<JsonFormStep> extractJsonFormSteps(SchemaObject root) {
 dynamic jsonFormDataAtPath(dynamic data, String idKey) {
   dynamic value = data;
   for (final part in idKey.split('.')) {
-    if (value is Map) {
-      value = value[part];
-    } else if (value is List) {
-      final index = int.tryParse(part);
-      value = index != null && index >= 0 && index < value.length
-          ? value[index]
-          : null;
-    } else {
-      return null;
-    }
+    if (value is! Map) return null;
+    value = value[part];
   }
   return value;
 }

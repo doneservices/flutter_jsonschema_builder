@@ -77,10 +77,6 @@ class Schema {
   String? description;
   SchemaType type;
 
-  /// name of the step group this schema belongs to in the stepped display
-  /// mode, parsed from `ui:step`
-  String? uiStep;
-
   /// media shown along this schema's step in the stepped display mode,
   /// parsed from `ui:media`
   JsonFormMedia? uiMedia;
@@ -114,9 +110,7 @@ class Schema {
       description: description,
       parentIdKey: parentIdKey ?? this.parentIdKey,
       dependentsAddedBy: dependentsAddedBy ?? this.dependentsAddedBy,
-    )
-      ..uiStep = uiStep
-      ..uiMedia = uiMedia;
+    )..uiMedia = uiMedia;
   }
 }
 

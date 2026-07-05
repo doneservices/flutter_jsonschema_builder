@@ -68,7 +68,6 @@ class SchemaArray extends Schema {
     )
       ..parentIdKey = parentIdKey ?? this.parentIdKey
       ..dependentsAddedBy = dependentsAddedBy ?? this.dependentsAddedBy
-      ..uiStep = uiStep
       ..uiMedia = uiMedia;
 
     newSchema.items = items
@@ -92,9 +91,6 @@ class SchemaArray extends Schema {
           break;
         case "ui:description":
           description = data as String;
-          break;
-        case "ui:step":
-          uiStep = data as String;
           break;
         case "ui:media":
           uiMedia = JsonFormMedia.fromJson(Map<String, dynamic>.from(data));

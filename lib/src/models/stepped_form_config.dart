@@ -31,7 +31,6 @@ class JsonFormSteppedConfig {
     this.submitButtonText = 'Submit',
     this.reviewTitle = 'Review your answers',
     this.reviewDescription,
-    this.emptyValueText = '—',
     this.stepTitleStyle,
     this.stepDescriptionStyle,
   });
@@ -73,9 +72,6 @@ class JsonFormSteppedConfig {
   final String reviewTitle;
 
   final String? reviewDescription;
-
-  /// shown on the review step for questions without an answer
-  final String emptyValueText;
 
   /// style of step titles, defaults to [TextTheme.headlineSmall] of the
   /// ambient theme

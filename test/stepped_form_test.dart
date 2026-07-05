@@ -75,35 +75,6 @@ void main() {
       expect(steps[2].media, isNull);
     });
 
-    test(
-        'ui:step optionally groups flat siblings onto one step '
-        'without changing the data shape', () {
-      const flatSchema = '''
-      {
-        "type": "object",
-        "properties": {
-          "firstName": {"type": "string"},
-          "lastName": {"type": "string"},
-          "age": {"type": "integer"}
-        }
-      }
-      ''';
-      const flatUiSchema = '''
-      {
-        "firstName": {"ui:step": "name"},
-        "lastName": {"ui:step": "name"}
-      }
-      ''';
-
-      final steps = extractJsonFormSteps(
-          parseSchema(flatSchema, uiSchema: flatUiSchema));
-
-      expect(steps.length, 2);
-      expect(steps.first.id, 'step-group:name');
-      expect(steps.first.entries.map((e) => e.schema.id),
-          ['firstName', 'lastName']);
-      expect(steps[1].entries.single.schema.id, 'age');
-    });
   });
 
   group('stepped display mode', () {
