@@ -1,32 +1,29 @@
 import '../models/models.dart';
 
-/// One schema rendered on a step, together with the [SchemaObject] that owns
-/// it (needed to resolve dependencies while the step is displayed).
-class JsonFormStepEntry {
-  JsonFormStepEntry({required this.schema, required this.parent});
-
-  final Schema schema;
-  final SchemaObject parent;
-}
-
 /// A single screen of the stepped display mode.
 class JsonFormStep {
   JsonFormStep({
     required this.id,
+    required this.parent,
+    required this.schemas,
     this.title,
     this.description,
     this.media,
-    required this.entries,
   });
 
-  /// the schema's idKey; stable across re-extractions, used to keep the
+  /// unique per extraction; stable across re-extractions, used to keep the
   /// current position when dependencies mutate the schema tree
   final String id;
+
+  /// the [SchemaObject] owning every schema on this step (needed to resolve
+  /// dependencies while the step is displayed)
+  final SchemaObject parent;
+
+  final List<Schema> schemas;
 
   final String? title;
   final String? description;
   final JsonFormMedia? media;
-  final List<JsonFormStepEntry> entries;
 }
 
 /// Maps a plain JSON schema to a list of steps — no ui schema required:
@@ -38,26 +35,35 @@ class JsonFormStep {
 /// * `ui:media` on a field or object attaches media to its step
 List<JsonFormStep> extractJsonFormSteps(SchemaObject root) {
   final steps = <JsonFormStep>[];
+  final usedIds = <String, int>{};
+
+  // dependency-added schemas can share an idKey (or lack one entirely);
+  // suffix repeats so page keys and per-step form keys stay unique
+  String uniqueId(String base) {
+    final seen = usedIds[base] ?? 0;
+    usedIds[base] = seen + 1;
+    return seen == 0 ? base : '$base@$seen';
+  }
 
   for (final child in root.properties ?? const <Schema>[]) {
     if (child is SchemaObject) {
-      final entries = (child.properties ?? const <Schema>[])
-          .map((schema) => JsonFormStepEntry(schema: schema, parent: child))
-          .toList();
-      if (entries.isEmpty) continue;
+      final schemas = child.properties ?? const <Schema>[];
+      if (schemas.isEmpty) continue;
 
       steps.add(JsonFormStep(
-        id: child.idKey,
+        id: uniqueId(child.idKey),
+        parent: child,
+        schemas: List.of(schemas),
         title: child.title != kNoTitle ? child.title : null,
         description: child.description,
         media: child.uiMedia,
-        entries: entries,
       ));
     } else {
       steps.add(JsonFormStep(
-        id: child.idKey,
+        id: uniqueId(child.idKey),
+        parent: root,
+        schemas: [child],
         media: child.uiMedia,
-        entries: [JsonFormStepEntry(schema: child, parent: root)],
       ));
     }
   }

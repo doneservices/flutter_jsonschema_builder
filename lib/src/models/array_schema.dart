@@ -93,7 +93,9 @@ class SchemaArray extends Schema {
           description = data as String;
           break;
         case "ui:media":
-          uiMedia = JsonFormMedia.fromJson(Map<String, dynamic>.from(data));
+          if (data is Map) {
+            uiMedia = JsonFormMedia.fromJson(Map<String, dynamic>.from(data));
+          }
           break;
         default:
           break;

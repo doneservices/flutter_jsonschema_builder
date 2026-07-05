@@ -1,8 +1,7 @@
 import 'package:flutter/widgets.dart';
 
 /// Declarative media attached to a form step, parsed from the `ui:media`
-/// entry of a property in the ui schema (or from the `media` entry of a
-/// step group inside the root `ui:steps` block).
+/// entry of a field or nested object in the ui schema.
 ///
 /// ```json
 /// "firstName": {
@@ -27,11 +26,19 @@ class JsonFormMedia {
     this.fit = BoxFit.contain,
   });
 
+  /// tolerant of loosely-typed json (e.g. a string height) — media config
+  /// often comes from hand-written or server-built ui schemas and must not
+  /// crash form construction
   factory JsonFormMedia.fromJson(Map<String, dynamic> json) {
+    final height = json['height'];
     return JsonFormMedia(
-      type: json['type'] as String? ?? 'image',
-      src: json['src'] as String? ?? '',
-      height: (json['height'] as num?)?.toDouble(),
+      type: json['type']?.toString() ?? 'image',
+      src: json['src']?.toString() ?? '',
+      height: height is num
+          ? height.toDouble()
+          : height is String
+              ? double.tryParse(height)
+              : null,
       fit: BoxFit.values.asNameMap()[json['fit']] ?? BoxFit.contain,
     );
   }

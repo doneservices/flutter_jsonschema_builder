@@ -40,14 +40,18 @@ class JsonFormStepProgress extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: TweenAnimationBuilder<double>(
-            tween: Tween(end: currentStep / totalSteps),
-            duration: duration,
-            curve: curve,
-            builder: (context, value, _) => LinearProgressIndicator(
-              value: value,
-              minHeight: minHeight,
-              borderRadius: BorderRadius.circular(minHeight / 2),
+          // ClipRRect instead of LinearProgressIndicator.borderRadius, which
+          // requires Flutter >= 3.13 while this package supports older SDKs
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(minHeight / 2),
+            child: TweenAnimationBuilder<double>(
+              tween: Tween(end: currentStep / totalSteps),
+              duration: duration,
+              curve: curve,
+              builder: (context, value, _) => LinearProgressIndicator(
+                value: value,
+                minHeight: minHeight,
+              ),
             ),
           ),
         ),
@@ -120,31 +124,25 @@ class JsonFormStepMedia extends StatelessWidget {
     final custom = builder?.call(context, media);
     if (custom != null) return custom;
 
-    final height = media.height ?? 200.0;
-    switch (media.type) {
-      case 'image':
-        return Image.network(
-          media.src,
-          height: height,
-          fit: media.fit,
-          errorBuilder: (_, __, ___) => SizedBox(height: height),
+    if (media.type != 'image' && media.type != 'asset') {
+      assert(() {
+        debugPrint(
+          'JsonForm: no mediaBuilder handled ui:media type "${media.type}" '
+          '(src: ${media.src}), nothing will be rendered for it.',
         );
-      case 'asset':
-        return Image.asset(
-          media.src,
-          height: height,
-          fit: media.fit,
-          errorBuilder: (_, __, ___) => SizedBox(height: height),
-        );
-      default:
-        assert(() {
-          debugPrint(
-            'JsonForm: no mediaBuilder handled ui:media type "${media.type}" '
-            '(src: ${media.src}), nothing will be rendered for it.',
-          );
-          return true;
-        }());
-        return const SizedBox.shrink();
+        return true;
+      }());
+      return const SizedBox.shrink();
     }
+
+    final height = media.height ?? 200.0;
+    return Image(
+      image: media.type == 'asset'
+          ? AssetImage(media.src)
+          : NetworkImage(media.src) as ImageProvider,
+      height: height,
+      fit: media.fit,
+      errorBuilder: (_, __, ___) => SizedBox(height: height),
+    );
   }
 }

@@ -69,6 +69,9 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
   /// re-extract the steps and stay on the step the user is looking at
   void _onObjectSchemaEvent(ObjectSchemaEvent? event) {
     if (event is! ObjectSchemaDependencyEvent) return;
+    // dependency events can arrive after an async gap (see
+    // _removeCreatedItemsSafeMode), possibly after this state is disposed
+    if (!mounted) return;
 
     setState(() {
       final currentId = _pageId(_currentPage);
@@ -97,14 +100,10 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
     return isValid;
   }
 
+  /// only reachable from non-last pages: the last page renders the submit
+  /// button (wired to [_trySubmit]) instead of the next button
   void _goNext() {
-    if (!_validateAndSaveCurrent()) return;
-
-    if (_currentPage >= _pageCount - 1) {
-      _trySubmit();
-    } else {
-      _animateToPage(_currentPage + 1);
-    }
+    if (_validateAndSaveCurrent()) _animateToPage(_currentPage + 1);
   }
 
   void _goBack() {
@@ -120,15 +119,14 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
     );
   }
 
-  /// validates every step that has been built (linear navigation guarantees
-  /// that is all of them by the time submit is reachable), jumping back to
-  /// the first invalid one
+  /// validates every step, jumping back to the first invalid one. A step
+  /// whose form was never built (possible when a dependency inserts steps
+  /// behind the current page) is not silently trusted — the user is taken
+  /// there instead.
   bool _trySubmit() {
     for (var i = 0; i < _steps.length; i++) {
       final formState = _formKeys[_steps[i].id]?.currentState;
-      if (formState == null) continue;
-
-      if (!formState.validate()) {
+      if (formState == null || !formState.validate()) {
         _animateToPage(i);
         return false;
       }
@@ -193,13 +191,18 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
                   final step = _steps[index];
                   return _KeepAlivePage(
                     key: ValueKey<String>(step.id),
-                    child: _StepPage(
-                      step: step,
-                      formKey: _formKeyFor(step),
-                      mainSchema: widget.mainSchema,
-                      config: config,
-                      showDebugElements: widget.showDebugElements,
-                      onSchemaEvent: _onObjectSchemaEvent,
+                    // silence animations (e.g. looping ui:media) on
+                    // kept-alive off-screen pages
+                    child: TickerMode(
+                      enabled: index == _currentPage,
+                      child: _StepPage(
+                        step: step,
+                        formKey: _formKeyFor(step),
+                        mainSchema: widget.mainSchema,
+                        config: config,
+                        showDebugElements: widget.showDebugElements,
+                        onSchemaEvent: _onObjectSchemaEvent,
+                      ),
                     ),
                   );
                 },
@@ -264,21 +267,20 @@ class _StepPage extends StatelessWidget {
           ),
           Form(
             key: formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                for (final entry in step.entries)
-                  ObjectSchemaInherited(
-                    schemaObject: entry.parent,
-                    listen: onSchemaEvent,
-                    child: FormFromSchemaBuilder(
+            child: ObjectSchemaInherited(
+              schemaObject: step.parent,
+              listen: onSchemaEvent,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (final schema in step.schemas)
+                    FormFromSchemaBuilder(
                       mainSchema: mainSchema,
-                      schema: entry.schema,
-                      schemaObject: entry.parent,
+                      schema: schema,
                       showDebugElements: showDebugElements,
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
@@ -318,16 +320,14 @@ class _ReviewPage extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           for (var i = 0; i < steps.length; i++)
-            for (final entry in steps[i].entries)
+            for (final schema in steps[i].schemas)
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 title: Text(
-                  entry.schema.title != kNoTitle
-                      ? entry.schema.title
-                      : entry.schema.id,
+                  schema.title != kNoTitle ? schema.title : schema.id,
                 ),
                 subtitle: Text(_formatValue(
-                    jsonFormDataAtPath(data, entry.schema.idKey))),
+                    schema, jsonFormDataAtPath(data, schema.idKey))),
                 trailing: const Icon(Icons.edit_outlined, size: 20),
                 onTap: () => onEditStep(i),
               ),
@@ -336,9 +336,18 @@ class _ReviewPage extends StatelessWidget {
     );
   }
 
-  String _formatValue(dynamic value) {
+  String _formatValue(Schema schema, dynamic value) {
     if (value == null || (value is String && value.isEmpty)) {
       return '—';
+    }
+    // show the enum's display name, like the field itself does
+    if (schema is SchemaProperty &&
+        schema.enumm != null &&
+        schema.enumNames != null) {
+      final index = schema.enumm!.indexOf(value);
+      if (index >= 0 && index < schema.enumNames!.length) {
+        return schema.enumNames![index].toString();
+      }
     }
     if (value is Map || value is List) {
       try {

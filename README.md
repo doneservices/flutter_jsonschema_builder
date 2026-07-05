@@ -122,7 +122,15 @@ final uiSchema = '''
 
 `JsonForm` can walk through the form one question at a time — a
 conversational, wizard-style experience — instead of rendering everything on
-one page. Enable it with `displayMode`:
+one page.
+
+<p>
+  <img width="260" alt="A step with a Lottie animation and grouped name fields" src="doc/images/stepped-media-step.png">
+  <img width="260" alt="A step with an image and an email field" src="doc/images/stepped-image-step.png">
+  <img width="260" alt="The review step listing all answers with tap-to-edit" src="doc/images/stepped-review.png">
+</p>
+
+Enable it with `displayMode`:
 
 ```dart
 JsonForm(

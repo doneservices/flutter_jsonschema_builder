@@ -56,7 +56,9 @@ class SchemaObject extends Schema {
           description = data as String;
           break;
         case "ui:media":
-          uiMedia = JsonFormMedia.fromJson(Map<String, dynamic>.from(data));
+          if (data is Map) {
+            uiMedia = JsonFormMedia.fromJson(Map<String, dynamic>.from(data));
+          }
           break;
         default:
           break;
@@ -122,13 +124,13 @@ class SchemaObject extends Schema {
     // set UI Schema to this ObjectSchema
     setUi(uiSchema);
 
-    // set UI Schema to their properties
+    // set UI Schema to their properties; objects and arrays only receive
+    // their own nested map — passing the parent's map would copy its
+    // object-level keys (ui:title, ui:order, ...) onto them
     properties?.forEach((_property) {
       final nestedUiSchema = uiSchema[_property.id];
 
       if (_property is SchemaObject) {
-        _property.setUi(uiSchema);
-        // apply the nested ui schema map to the object and its children
         if (nestedUiSchema is Map<String, dynamic>) {
           _property.setUiSchema(nestedUiSchema);
         }
@@ -140,11 +142,15 @@ class SchemaObject extends Schema {
       }
     });
 
-    // order logic
+    // order logic; ids missing from ui:order keep schema order, after the
+    // listed ones
     if (order != null) {
-      properties!.sort((a, b) {
-        return order!.indexOf(a.id) - order!.indexOf(b.id);
-      });
+      int orderIndex(Schema schema) {
+        final index = order!.indexOf(schema.id);
+        return index == -1 ? order!.length : index;
+      }
+
+      properties!.sort((a, b) => orderIndex(a) - orderIndex(b));
     }
   }
 

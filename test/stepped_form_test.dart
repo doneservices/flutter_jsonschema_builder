@@ -58,10 +58,12 @@ void main() {
 
       expect(steps.length, 3);
       expect(steps.map((s) => s.id), ['name', 'age', 'bio']);
-      expect(steps.first.entries.map((e) => e.schema.id), ['first', 'last']);
+      expect(steps.first.schemas.map((s) => s.id), ['first', 'last']);
       expect(steps.first.title, 'What is your name?');
       expect(steps.first.description, 'So we know what to call you');
-      expect(steps[1].entries.single.schema.id, 'age');
+      expect(steps.first.parent.id, 'name');
+      expect(steps[1].schemas.single.id, 'age');
+      expect(steps[1].parent.id, kGenesisIdKey);
     });
 
     test('ui:media on an object or field attaches media to its step', () {
@@ -75,6 +77,61 @@ void main() {
       expect(steps[2].media, isNull);
     });
 
+    test('duplicate property ids still produce unique step ids', () {
+      final schema = parseSchema(testJsonSchema);
+      final age = schema.properties!.firstWhere((p) => p.id == 'age');
+      schema.properties!.add(age.copyWith(id: 'age'));
+
+      final steps = extractJsonFormSteps(schema);
+
+      expect(steps.map((s) => s.id).toSet().length, steps.length);
+    });
+  });
+
+  group('ui schema scoping and hardening', () {
+    test('object-level ui keys apply to the object, not its children', () {
+      const uiSchema = '''
+      {
+        "name": {
+          "ui:title": "Custom section",
+          "ui:media": {"type": "image", "src": "x.png"}
+        }
+      }
+      ''';
+      final schema = parseSchema(testJsonSchema, uiSchema: uiSchema);
+      final name = schema.properties!.first as SchemaObject;
+
+      expect(name.title, 'Custom section');
+      expect(name.uiMedia?.src, 'x.png');
+
+      final first = name.properties!.first as SchemaProperty;
+      expect(first.title, 'First name');
+      expect(first.uiMedia, isNull);
+    });
+
+    test('partial nested ui:order keeps unlisted fields after listed ones',
+        () {
+      const uiSchema = '{"name": {"ui:order": ["last"]}}';
+      final schema = parseSchema(testJsonSchema, uiSchema: uiSchema);
+      final name = schema.properties!.first as SchemaObject;
+
+      expect(name.properties!.map((p) => p.id), ['last', 'first']);
+    });
+
+    test('malformed ui:media entries are ignored instead of crashing', () {
+      const uiSchema = '''
+      {
+        "age": {"ui:media": "not-a-map"},
+        "bio": {"ui:media": {"type": "image", "src": "a.png", "height": "120"}}
+      }
+      ''';
+      final schema = parseSchema(testJsonSchema, uiSchema: uiSchema);
+      final age = schema.properties!.firstWhere((p) => p.id == 'age');
+      final bio = schema.properties!.firstWhere((p) => p.id == 'bio');
+
+      expect(age.uiMedia, isNull);
+      expect(bio.uiMedia?.height, 120.0);
+    });
   });
 
   group('stepped display mode', () {

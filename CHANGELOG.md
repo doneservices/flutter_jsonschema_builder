@@ -9,7 +9,10 @@
 * Added the `ui:media` ui schema key for attaching images or animations to a
   step, and `JsonFormSteppedConfig.mediaBuilder` for custom media types
   (e.g. Lottie) without adding package dependencies
-* Nested ui schema maps are now applied to nested objects and arrays
+* Nested ui schema maps are now applied to nested objects and arrays;
+  object-level `ui:*` keys apply to the object itself and no longer leak
+  onto its child fields, and a partial `ui:order` keeps unlisted fields
+  after the listed ones instead of reordering them first
 
 ## 0.1.3
 
