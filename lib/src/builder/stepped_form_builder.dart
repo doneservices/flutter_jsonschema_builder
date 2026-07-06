@@ -42,6 +42,12 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
   final Map<String, GlobalKey<FormState>> _formKeys = {};
   int _currentPage = 0;
 
+  /// a double-tap must not navigate twice or submit twice; taps are ignored
+  /// while a page transition runs, and [_isSubmitting] swallows duplicate
+  /// taps delivered before the consumer's onSubmit had a frame to react
+  bool _isTransitioning = false;
+  bool _isSubmitting = false;
+
   JsonFormSteppedConfig get config => widget.config;
 
   int get _pageCount => _steps.length + (config.showReviewStep ? 1 : 0);
@@ -80,7 +86,11 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
       var newPage = currentId == _reviewPageId
           ? _pageCount - 1
           : _steps.indexWhere((step) => step.id == currentId);
-      if (newPage < 0) newPage = _currentPage.clamp(0, _pageCount - 1);
+      // the current step may have been removed — or every step (clamping
+      // against an empty page range would throw)
+      if (newPage < 0) {
+        newPage = _pageCount > 0 ? _currentPage.clamp(0, _pageCount - 1) : 0;
+      }
 
       if (newPage != _currentPage) {
         _currentPage = newPage;
@@ -103,20 +113,25 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
   /// only reachable from non-last pages: the last page renders the submit
   /// button (wired to [_trySubmit]) instead of the next button
   void _goNext() {
+    if (_isTransitioning) return;
     if (_validateAndSaveCurrent()) _animateToPage(_currentPage + 1);
   }
 
   void _goBack() {
+    if (_isTransitioning) return;
     if (_currentPage > 0) _animateToPage(_currentPage - 1);
   }
 
   void _animateToPage(int page) {
     setState(() => _currentPage = page);
-    _pageController.animateToPage(
-      page,
-      duration: config.transitionDuration,
-      curve: config.transitionCurve,
-    );
+    _isTransitioning = true;
+    _pageController
+        .animateToPage(
+          page,
+          duration: config.transitionDuration,
+          curve: config.transitionCurve,
+        )
+        .whenComplete(() => _isTransitioning = false);
   }
 
   /// validates every step, jumping back to the first invalid one. A step
@@ -124,6 +139,8 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
   /// behind the current page) is not silently trusted — the user is taken
   /// there instead.
   bool _trySubmit() {
+    if (_isTransitioning || _isSubmitting) return false;
+
     for (var i = 0; i < _steps.length; i++) {
       final formState = _formKeys[_steps[i].id]?.currentState;
       if (formState == null || !formState.validate()) {
@@ -133,6 +150,10 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
       formState.save();
     }
 
+    _isSubmitting = true;
+    // re-arm on the next frame: the tap's ink ripple guarantees one, and by
+    // then the consumer had the chance to navigate away or disable the form
+    WidgetsBinding.instance.addPostFrameCallback((_) => _isSubmitting = false);
     widget.onSubmit();
     return true;
   }

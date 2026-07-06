@@ -1,3 +1,5 @@
+# Changelog
+
 ## 0.2.0
 
 * Added `JsonFormDisplayMode.stepped`: a step-by-step display mode with

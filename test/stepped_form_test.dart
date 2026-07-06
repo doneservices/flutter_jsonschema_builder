@@ -28,6 +28,43 @@ const testJsonSchema = '''
 }
 ''';
 
+/// a `dependencies`/`oneOf` trigger that inserts a `petName` field when
+/// "cat" is selected — in stepped mode that means inserting/removing a
+/// whole step mid-flow
+const dependencyJsonSchema = '''
+{
+  "title": "Onboarding",
+  "type": "object",
+  "properties": {
+    "pet": {"type": "string", "title": "Do you have a pet?", "enum": ["none", "cat"]},
+    "bio": {"type": "string", "title": "Bio"}
+  },
+  "dependencies": {
+    "pet": {
+      "oneOf": [
+        {"properties": {"pet": {"enum": ["none"]}}},
+        {
+          "properties": {
+            "pet": {"enum": ["cat"]},
+            "petName": {"type": "string", "title": "Pet name"}
+          }
+        }
+      ]
+    }
+  }
+}
+''';
+
+Future<void> selectDropdownValue(
+    WidgetTester tester, String key, String value) async {
+  // the step's page shares the property's key — target the dropdown itself
+  await tester.tap(find.byWidgetPredicate((widget) =>
+      widget is DropdownButtonFormField && widget.key == Key(key)));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text(value).last);
+  await tester.pumpAndSettle();
+}
+
 /// media is the only step-specific ui schema addition
 const testUiSchema = '''
 {
@@ -111,10 +148,14 @@ void main() {
 
     test('partial nested ui:order keeps unlisted fields after listed ones',
         () {
-      const uiSchema = '{"name": {"ui:order": ["last"]}}';
+      const uiSchema = '{"ui:order": ["bio"], "name": {"ui:order": ["last"]}}';
       final schema = parseSchema(testJsonSchema, uiSchema: uiSchema);
-      final name = schema.properties!.first as SchemaObject;
 
+      // multiple unlisted ids keep their relative schema order
+      expect(schema.properties!.map((p) => p.id), ['bio', 'name', 'age']);
+
+      final name =
+          schema.properties!.whereType<SchemaObject>().first;
       expect(name.properties!.map((p) => p.id), ['last', 'first']);
     });
 
@@ -293,6 +334,93 @@ void main() {
 
       expect(savedData, isNotNull);
       expect(savedData['name']['first'], 'Ada');
+    });
+
+    testWidgets(
+        'a dependency-inserted step joins the flow, leaves it again, '
+        'and submits its data', (tester) async {
+      dynamic savedData;
+      await tester.pumpWidget(buildTestApp(JsonForm(
+        jsonSchema: dependencyJsonSchema,
+        displayMode: JsonFormDisplayMode.stepped,
+        onFormDataSaved: (data) => savedData = data,
+      )));
+      await tester.pump();
+
+      expect(find.text('1 / 2'), findsOneWidget);
+
+      // selecting the trigger value inserts the dependent step...
+      await selectDropdownValue(tester, 'pet', 'cat');
+      expect(find.text('1 / 3'), findsOneWidget);
+
+      // ...and selecting the other value removes it again
+      await selectDropdownValue(tester, 'pet', 'none');
+      expect(find.text('1 / 2'), findsOneWidget);
+
+      await selectDropdownValue(tester, 'pet', 'cat');
+      expect(find.text('1 / 3'), findsOneWidget);
+
+      // the inserted step comes right after its trigger and is navigable
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
+      expect(find.text('2 / 3'), findsOneWidget);
+      expect(find.textContaining('Pet name'), findsOneWidget);
+      await tester.enterText(find.byKey(const Key('petName')), 'Whiskers');
+      await flushTextDebounce(tester);
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('3 / 3'), findsOneWidget);
+      await tester.enterText(find.byKey(const Key('bio')), 'Cat person');
+      await flushTextDebounce(tester);
+      await tester.tap(find.text('Submit'));
+      await tester.pumpAndSettle();
+
+      expect(savedData, isNotNull);
+      expect(savedData['pet'], 'cat');
+      expect(savedData['petName'], 'Whiskers');
+      expect(savedData['bio'], 'Cat person');
+    });
+
+    testWidgets('a double-tap on Next advances a single step', (tester) async {
+      await tester.pumpWidget(buildTestApp(JsonForm(
+        jsonSchema: testJsonSchema,
+        displayMode: JsonFormDisplayMode.stepped,
+        onFormDataSaved: (_) {},
+      )));
+      await tester.pump();
+
+      await tester.enterText(find.byKey(const Key('name.first')), 'Ada');
+      await flushTextDebounce(tester);
+
+      // the second tap lands mid-transition and must be ignored
+      await tester.tap(find.text('Next'));
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('2 / 3'), findsOneWidget);
+    });
+
+    testWidgets('a double-tap on Submit fires onSubmit once', (tester) async {
+      var submitCount = 0;
+      await tester.pumpWidget(buildTestApp(JsonForm(
+        jsonSchema: dependencyJsonSchema,
+        displayMode: JsonFormDisplayMode.stepped,
+        onFormDataSaved: (_) => submitCount++,
+      )));
+      await tester.pump();
+
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
+      expect(find.text('Submit'), findsOneWidget);
+
+      // both taps arrive before the consumer gets a frame to react
+      await tester.tap(find.text('Submit'));
+      await tester.tap(find.text('Submit'));
+      await tester.pumpAndSettle();
+
+      expect(submitCount, 1);
     });
 
     testWidgets('horizontal transition axis is honored', (tester) async {

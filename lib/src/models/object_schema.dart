@@ -143,14 +143,20 @@ class SchemaObject extends Schema {
     });
 
     // order logic; ids missing from ui:order keep schema order, after the
-    // listed ones
+    // listed ones. List.sort is not guaranteed stable, so tie-break on the
+    // original position
     if (order != null) {
       int orderIndex(Schema schema) {
         final index = order!.indexOf(schema.id);
         return index == -1 ? order!.length : index;
       }
 
-      properties!.sort((a, b) => orderIndex(a) - orderIndex(b));
+      final indexed = properties!.asMap().entries.toList()
+        ..sort((a, b) {
+          final byOrder = orderIndex(a.value) - orderIndex(b.value);
+          return byOrder != 0 ? byOrder : a.key - b.key;
+        });
+      properties = [for (final entry in indexed) entry.value];
     }
   }
 

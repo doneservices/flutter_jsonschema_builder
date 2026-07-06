@@ -109,14 +109,15 @@ class _JsonFormState extends State<JsonForm> {
 
   /// owned by the state so entered data survives rebuilds of this widget —
   /// WidgetBuilderInherited is recreated on every build and must keep
-  /// receiving the same map instance
+  /// receiving the same map instance. A copy of [JsonForm.initialData], so
+  /// saving fields never mutates the caller's map
   late final Map<String, dynamic> _formData;
 
   _JsonFormState();
 
   @override
   void initState() {
-    _formData = widget.initialData ?? {};
+    _formData = Map<String, dynamic>.from(widget.initialData ?? {});
     mainSchema = (Schema.fromJson(json.decode(widget.jsonSchema),
         id: kGenesisIdKey, initialData: widget.initialData) as SchemaObject)
       ..setUiSchema(
