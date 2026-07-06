@@ -111,18 +111,22 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
   }
 
   /// only reachable from non-last pages: the last page renders the submit
-  /// button (wired to [_trySubmit]) instead of the next button
+  /// button (wired to [_trySubmit]) instead of the next button.
+  /// Checks the transition guard itself so a tap mid-transition doesn't
+  /// even validate (and show errors on) the incoming page.
   void _goNext() {
     if (_isTransitioning) return;
     if (_validateAndSaveCurrent()) _animateToPage(_currentPage + 1);
   }
 
   void _goBack() {
-    if (_isTransitioning) return;
     if (_currentPage > 0) _animateToPage(_currentPage - 1);
   }
 
+  /// every page change funnels through here (including the review page's
+  /// tap-to-edit), so this is where re-entrant transitions are blocked
   void _animateToPage(int page) {
+    if (_isTransitioning) return;
     setState(() => _currentPage = page);
     _isTransitioning = true;
     _pageController
@@ -139,6 +143,8 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
   /// behind the current page) is not silently trusted — the user is taken
   /// there instead.
   bool _trySubmit() {
+    // checked here too: the guard in _animateToPage only stops the page
+    // change, not a submit fired while a transition is still running
     if (_isTransitioning || _isSubmitting) return false;
 
     for (var i = 0; i < _steps.length; i++) {
