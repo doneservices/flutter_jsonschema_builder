@@ -20,8 +20,8 @@ version: 1.0.0+1
 
 environment:
   sdk: ^3.7.0
-  # lottie 3.3 requires Flutter 3.27+
-  flutter: '>=3.27.0'
+  # Dart 3.7 ships with Flutter 3.29; also covers lottie 3.3 (needs 3.27+)
+  flutter: '>=3.29.0'
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions

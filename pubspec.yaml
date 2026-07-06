@@ -5,7 +5,7 @@ homepage: https://github.com/edlose16b/flutter_jsonschema_builder
 
 environment:
   sdk: ^3.7.0
-  flutter: '>=3.27.0'
+  flutter: '>=3.29.0'
 
 dependencies:
   flutter:
