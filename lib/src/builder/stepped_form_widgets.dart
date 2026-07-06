@@ -40,18 +40,14 @@ class JsonFormStepProgress extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          // ClipRRect instead of LinearProgressIndicator.borderRadius, which
-          // requires Flutter >= 3.13 while this package supports older SDKs
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(minHeight / 2),
-            child: TweenAnimationBuilder<double>(
-              tween: Tween(end: currentStep / totalSteps),
-              duration: duration,
-              curve: curve,
-              builder: (context, value, _) => LinearProgressIndicator(
-                value: value,
-                minHeight: minHeight,
-              ),
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(end: currentStep / totalSteps),
+            duration: duration,
+            curve: curve,
+            builder: (context, value, _) => LinearProgressIndicator(
+              value: value,
+              minHeight: minHeight,
+              borderRadius: BorderRadius.circular(minHeight / 2),
             ),
           ),
         ),
