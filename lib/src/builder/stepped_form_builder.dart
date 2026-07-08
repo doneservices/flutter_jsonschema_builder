@@ -8,9 +8,13 @@ import 'package:flutter_jsonschema_builder/src/builder/widget_builder.dart';
 import 'package:flutter_jsonschema_builder/src/models/models.dart';
 import 'package:flutter_jsonschema_builder/src/models/stepped_form_config.dart';
 
-/// bottom padding inside a step's scroll view so its content can scroll
-/// clear of the navigation controls floating above it
-const _kControlsClearance = 80.0;
+/// bottom scroll padding used until the floating controls have been
+/// measured; afterwards the measured height (plus a gap) takes over so
+/// custom button builders and text scaling can't hide the last field
+const _kFallbackControlsClearance = 80.0;
+
+/// breathing room between the lowest scrolled-to field and the controls
+const _kControlsGap = 16.0;
 
 /// Renders [mainSchema] one step at a time: a progress header, a page per
 /// step (see [extractJsonFormSteps]) with optional `ui:media`, and
@@ -45,6 +49,13 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
   late final PageController _pageController;
   final Map<String, GlobalKey<FormState>> _formKeys = {};
   int _currentPage = 0;
+
+  final GlobalKey _controlsKey = GlobalKey();
+
+  /// bottom padding for the pages' scroll views, kept in sync with the
+  /// rendered height of the floating controls (custom builders and text
+  /// scaling make that height unknowable up front)
+  double _controlsClearance = _kFallbackControlsClearance;
 
   /// a double-tap must not navigate twice or submit twice; taps are ignored
   /// while a page transition runs, and [_isSubmitting] swallows duplicate
@@ -219,8 +230,24 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
     return true;
   }
 
+  /// re-measures the floating controls after this frame; build schedules
+  /// this every time, so theme/text-scale changes and custom builders that
+  /// change size converge on the right clearance within a frame
+  void _scheduleControlsMeasurement() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final box = _controlsKey.currentContext?.findRenderObject();
+      if (box is! RenderBox || !box.hasSize) return;
+      final clearance = box.size.height + _kControlsGap;
+      if ((clearance - _controlsClearance).abs() > 0.5) {
+        setState(() => _controlsClearance = clearance);
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    _scheduleControlsMeasurement();
     return LayoutBuilder(builder: (context, constraints) {
       assert(
         constraints.hasBoundedHeight,
@@ -274,6 +301,7 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
                             steps: _steps,
                             config: config,
                             onEditStep: _animateToPage,
+                            bottomClearance: _controlsClearance,
                           );
                         }
                         final step = _steps[index];
@@ -290,6 +318,7 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
                               config: config,
                               showDebugElements: widget.showDebugElements,
                               onSchemaEvent: _onObjectSchemaEvent,
+                              bottomClearance: _controlsClearance,
                             ),
                           ),
                         );
@@ -298,13 +327,16 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
                   ),
                   Align(
                     alignment: Alignment.bottomCenter,
-                    child: _StepControls(
-                      config: config,
-                      isFirstPage: _currentPage == 0,
-                      isLastPage: _currentPage >= _pageCount - 1,
-                      onBack: _goBack,
-                      onNext: _goNext,
-                      onSubmit: _trySubmit,
+                    child: KeyedSubtree(
+                      key: _controlsKey,
+                      child: _StepControls(
+                        config: config,
+                        isFirstPage: _currentPage == 0,
+                        isLastPage: _currentPage >= _pageCount - 1,
+                        onBack: _goBack,
+                        onNext: _goNext,
+                        onSubmit: _trySubmit,
+                      ),
                     ),
                   ),
                 ],
@@ -327,6 +359,7 @@ class _StepPage extends StatelessWidget {
     required this.config,
     required this.showDebugElements,
     required this.onSchemaEvent,
+    required this.bottomClearance,
   });
 
   final JsonFormStep step;
@@ -336,10 +369,14 @@ class _StepPage extends StatelessWidget {
   final bool showDebugElements;
   final ValueSetter<ObjectSchemaEvent?> onSchemaEvent;
 
+  /// measured height of the floating controls, so the last field can
+  /// always scroll clear of them
+  final double bottomClearance;
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.only(top: 8, bottom: _kControlsClearance),
+      padding: EdgeInsets.only(top: 8, bottom: bottomClearance),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -391,18 +428,20 @@ class _ReviewPage extends StatelessWidget {
     required this.steps,
     required this.config,
     required this.onEditStep,
+    required this.bottomClearance,
   });
 
   final List<JsonFormStep> steps;
   final JsonFormSteppedConfig config;
   final ValueSetter<int> onEditStep;
+  final double bottomClearance;
 
   @override
   Widget build(BuildContext context) {
     final data = WidgetBuilderInherited.of(context).data;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.only(top: 8, bottom: _kControlsClearance),
+      padding: EdgeInsets.only(top: 8, bottom: bottomClearance),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

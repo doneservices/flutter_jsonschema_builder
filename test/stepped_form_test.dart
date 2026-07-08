@@ -452,6 +452,37 @@ void main() {
     });
 
     testWidgets(
+        'scroll clearance follows the measured height of custom controls',
+        (tester) async {
+      const tallControls = 160.0;
+      await tester.pumpWidget(buildTestApp(JsonForm(
+        jsonSchema: testJsonSchema,
+        displayMode: JsonFormDisplayMode.stepped,
+        steppedConfig: JsonFormSteppedConfig(
+          nextButtonBuilder: (onNext) => SizedBox(
+            height: tallControls,
+            child: ElevatedButton(
+              onPressed: onNext,
+              child: const Text('Next'),
+            ),
+          ),
+        ),
+        onFormDataSaved: (_) {},
+      )));
+      await tester.pump(); // first frame schedules the measurement
+      await tester.pump(); // measured clearance applied
+
+      // the page reserves at least the controls' height, so the last
+      // field can always scroll clear of the floating buttons
+      final scroll = tester.widget<SingleChildScrollView>(
+          find.byType(SingleChildScrollView).first);
+      expect(
+        scroll.padding!.resolve(TextDirection.ltr).bottom,
+        greaterThanOrEqualTo(tallControls),
+      );
+    });
+
+    testWidgets(
         'keyboard focus follows navigation into the next text field and '
         'drops on the review page', (tester) async {
       await tester.pumpWidget(buildTestApp(JsonForm(
