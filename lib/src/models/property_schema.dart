@@ -79,12 +79,14 @@ class SchemaProperty extends Schema {
   }
 
   void setUi(Map<String, dynamic> uiSchema) {
-    // set general ui schema
-    setUiToProperty(uiSchema);
+    // set general ui schema: keys at the root of the map broadcast to every
+    // property, except presentation keys that identify a single field
+    setUiToProperty(uiSchema, isGeneralPass: true);
 
     // set custom ui schema for property
-    if (uiSchema.containsKey(id)) {
-      setUiToProperty(uiSchema[id]);
+    final custom = uiSchema[id];
+    if (custom is Map<String, dynamic>) {
+      setUiToProperty(custom);
     }
   }
 
@@ -118,7 +120,8 @@ class SchemaProperty extends Schema {
       ..dependentsAddedBy = dependentsAddedBy ?? this.dependentsAddedBy
       ..required = required
       ..dependents = dependents
-      ..isMultipleFile = isMultipleFile;
+      ..isMultipleFile = isMultipleFile
+      ..uiMedia = uiMedia;
 
     return newSchema;
   }
@@ -172,7 +175,8 @@ class SchemaProperty extends Schema {
     }
   }
 
-  void setUiToProperty(Map<String, dynamic> uiSchema) {
+  void setUiToProperty(Map<String, dynamic> uiSchema,
+      {bool isGeneralPass = false}) {
     uiSchema.forEach((key, data) {
       switch (key) {
         case "ui:disabled":
@@ -189,16 +193,24 @@ class SchemaProperty extends Schema {
           emptyValue = data as String;
           break;
         case "ui:title":
-          title = data as String;
+          // a title/description/media names one field (or the enclosing
+          // object) — broadcasting it from the general pass would overwrite
+          // every child, so these only apply from a field's own map
+          if (!isGeneralPass) title = data as String;
           break;
         case "ui:description":
-          description = data as String;
+          if (!isGeneralPass) description = data as String;
           break;
         case "ui:help":
           help = data as String;
           break;
         case "ui:widget":
           widget = data as String;
+          break;
+        case "ui:media":
+          if (!isGeneralPass && data is Map) {
+            uiMedia = JsonFormMedia.fromJson(Map<String, dynamic>.from(data));
+          }
           break;
         case "ui:options":
           fileType = data["fileType"];

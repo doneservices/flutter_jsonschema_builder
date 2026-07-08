@@ -77,6 +77,10 @@ class Schema {
   String? description;
   SchemaType type;
 
+  /// media shown along this schema's step in the stepped display mode,
+  /// parsed from `ui:media`
+  JsonFormMedia? uiMedia;
+
   // util props
   String? parentIdKey;
   List<String> dependentsAddedBy = [];
@@ -106,7 +110,7 @@ class Schema {
       description: description,
       parentIdKey: parentIdKey ?? this.parentIdKey,
       dependentsAddedBy: dependentsAddedBy ?? this.dependentsAddedBy,
-    );
+    )..uiMedia = uiMedia;
   }
 }
 
