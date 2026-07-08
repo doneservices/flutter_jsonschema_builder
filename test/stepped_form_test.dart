@@ -485,9 +485,11 @@ void main() {
     testWidgets(
         'the keyboard action button moves to the next text field on the '
         'page, then to the next page', (tester) async {
+      dynamic changedData;
       await tester.pumpWidget(buildTestApp(JsonForm(
         jsonSchema: testJsonSchema,
         displayMode: JsonFormDisplayMode.stepped,
+        onChanged: (data) => changedData = data,
         onFormDataSaved: (_) {},
       )));
       await tester.pump();
@@ -495,11 +497,14 @@ void main() {
       // step 1 holds two text fields (first, last)
       await tester.showKeyboard(find.byKey(const Key('name.first')));
       await tester.enterText(find.byKey(const Key('name.first')), 'Ada');
+      // no flushTextDebounce on purpose: submitting must flush the pending
+      // debounce itself, so the typed value propagates immediately
       await tester.testTextInput.receiveAction(TextInputAction.next);
       await tester.pumpAndSettle();
 
       expect(find.text('1 / 3'), findsOneWidget);
       expect(focusedTextField(tester), isNotNull);
+      expect(changedData?['name']?['first'], 'Ada');
 
       // enter on the page's last text field advances the page
       await tester.testTextInput.receiveAction(TextInputAction.next);

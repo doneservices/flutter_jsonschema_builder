@@ -18,11 +18,23 @@ class NumberJFormField extends PropertyFieldWidget<String?> {
   });
 
   @override
-  State<StatefulWidget> createState() => _NumberJFormFieldState();
+  State<NumberJFormField> createState() => _NumberJFormFieldState();
 }
 
 class _NumberJFormFieldState extends State<NumberJFormField> {
   Timer? _timer;
+
+  /// value typed since the last onChanged dispatch, so a keyboard-driven
+  /// step advance can flush it instead of losing it to the pending timer
+  String? _pendingValue;
+
+  /// dispatch a still-pending debounced value right now
+  void _flushDebounce() {
+    if (_timer?.isActive ?? false) _timer!.cancel();
+    final value = _pendingValue;
+    _pendingValue = null;
+    if (value != null && widget.onChanged != null) widget.onChanged!(value);
+  }
 
   @override
   void initState() {
@@ -50,18 +62,23 @@ class _NumberJFormFieldState extends State<NumberJFormField> {
           keyboardType: TextInputType.number,
           textInputAction: steppedScope != null ? TextInputAction.next : null,
           // focus-driven auto-scroll must clear the floating controls
-          scrollPadding:
-              steppedScope != null
-                  ? EdgeInsets.fromLTRB(
-                    20,
-                    20,
-                    20,
-                    steppedScope.controlsClearance + 20,
-                  )
-                  : const EdgeInsets.all(20),
+          scrollPadding: steppedScope != null
+              ? EdgeInsets.fromLTRB(
+                  20,
+                  20,
+                  20,
+                  steppedScope.controlsClearance + 20,
+                )
+              : const EdgeInsets.all(20),
           // onEditingComplete (not onFieldSubmitted) replaces the default
-          // focus handling, so the scope decides where focus goes
-          onEditingComplete: steppedScope?.onTextSubmitted,
+          // focus handling, so the scope decides where focus goes; the
+          // debounce is flushed first so dependency updates aren't lost
+          onEditingComplete: steppedScope == null
+              ? null
+              : () {
+                  _flushDebounce();
+                  steppedScope.onTextSubmitted();
+                },
           inputFormatters: <TextInputFormatter>[
             FilteringTextInputFormatter.allow(RegExp('[0-9.,]+')),
           ],
@@ -73,16 +90,17 @@ class _NumberJFormFieldState extends State<NumberJFormField> {
           onChanged: (value) {
             if (_timer != null && _timer!.isActive) _timer!.cancel();
 
+            _pendingValue = value;
             _timer = Timer(const Duration(seconds: 1), () {
+              _pendingValue = null;
               if (widget.onChanged != null) widget.onChanged!(value);
             });
           },
-          style:
-              widget.property.readOnly
-                  ? Theme.of(
-                    context,
-                  ).textTheme.titleMedium!.apply(color: Colors.grey)
-                  : Theme.of(context).textTheme.titleMedium,
+          style: widget.property.readOnly
+              ? Theme.of(
+                  context,
+                ).textTheme.titleMedium!.apply(color: Colors.grey)
+              : Theme.of(context).textTheme.titleMedium,
           validator: (String? value) {
             if (widget.property.required && value != null && value.isEmpty) {
               return uiConfig.requiredText ?? 'Required';
@@ -103,9 +121,9 @@ class _NumberJFormFieldState extends State<NumberJFormField> {
               InputDecoration(
                 helperText:
                     widget.property.help != null &&
-                            widget.property.help!.isNotEmpty
-                        ? widget.property.help
-                        : null,
+                        widget.property.help!.isNotEmpty
+                    ? widget.property.help
+                    : null,
                 errorStyle: Theme.of(context).textTheme.bodyMedium!.apply(
                   color: Theme.of(context).colorScheme.error,
                 ),

@@ -15,7 +15,7 @@ class CheckboxJFormField extends PropertyFieldWidget<bool> {
   });
 
   @override
-  State<StatefulWidget> createState() => _CheckboxJFormFieldState();
+  State<CheckboxJFormField> createState() => _CheckboxJFormFieldState();
 }
 
 class _CheckboxJFormFieldState extends State<CheckboxJFormField> {

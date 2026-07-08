@@ -99,7 +99,7 @@ class JsonForm extends StatefulWidget {
   final JsonFormSteppedConfig steppedConfig;
 
   @override
-  State<StatefulWidget> createState() => _JsonFormState();
+  State<JsonForm> createState() => _JsonFormState();
 }
 
 class _JsonFormState extends State<JsonForm> {

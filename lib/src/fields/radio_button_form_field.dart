@@ -17,7 +17,7 @@ class RadioButtonJFormField extends PropertyFieldWidget<dynamic> {
   });
 
   @override
-  State<StatefulWidget> createState() => _RadioButtonJFormFieldState();
+  State<RadioButtonJFormField> createState() => _RadioButtonJFormFieldState();
 }
 
 class _RadioButtonJFormFieldState extends State<RadioButtonJFormField> {

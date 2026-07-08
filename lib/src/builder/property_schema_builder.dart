@@ -169,8 +169,9 @@ class PropertySchemaBuilder extends StatelessWidget {
                 context,
                 schemaProperty.idKey,
               ),
-              decoration:
-                  WidgetBuilderInherited.of(context).uiConfig.inputDecoration,
+              decoration: WidgetBuilderInherited.of(
+                context,
+              ).uiConfig.inputDecoration,
             );
             break;
           }
@@ -211,8 +212,9 @@ class PropertySchemaBuilder extends StatelessWidget {
                 context,
                 schemaProperty.idKey,
               ),
-              decoration:
-                  WidgetBuilderInherited.of(context).uiConfig.inputDecoration,
+              decoration: WidgetBuilderInherited.of(
+                context,
+              ).uiConfig.inputDecoration,
             );
             break;
           }
@@ -229,8 +231,9 @@ class PropertySchemaBuilder extends StatelessWidget {
               widgetBuilderInherited.notifyChanges();
             },
             customValidator: _getCustomValidator(context, schemaProperty.idKey),
-            decoration:
-                WidgetBuilderInherited.of(context).uiConfig.inputDecoration,
+            decoration: WidgetBuilderInherited.of(
+              context,
+            ).uiConfig.inputDecoration,
           );
           break;
         case SchemaType.integer:
@@ -250,54 +253,30 @@ class PropertySchemaBuilder extends StatelessWidget {
               widgetBuilderInherited.notifyChanges();
             },
             customValidator: _getCustomValidator(context, schemaProperty.idKey),
-            decoration:
-                WidgetBuilderInherited.of(context).uiConfig.inputDecoration,
+            decoration: WidgetBuilderInherited.of(
+              context,
+            ).uiConfig.inputDecoration,
           );
           break;
         case SchemaType.boolean:
-          if (schemaProperty.widget == 'radio') {
-            field = RadioButtonJFormField(
-              property: schemaPropertySorted,
-              onChanged: (value) {
-                dispatchBooleanEventToParent(context, value != null);
-                updateData(context, value);
-                widgetBuilderInherited.notifyChanges();
-              },
-              onSaved: (val) {
-                log(
-                  'onSaved: RadioButtonJFormField ${schemaProperty.idKey}  : $val',
-                );
+          // ui:widget radio booleans never reach this switch — the useRadio
+          // branch above already handled them
+          field = CheckboxJFormField(
+            property: schemaPropertySorted,
+            onChanged: (value) {
+              dispatchBooleanEventToParent(context, value!);
+              updateData(context, value);
+              widgetBuilderInherited.notifyChanges();
+            },
+            onSaved: (val) {
+              log(
+                'onSaved: CheckboxJFormField ${schemaProperty.idKey}  : $val',
+              );
 
-                updateData(context, val);
-              },
-              customValidator: _getCustomValidator(
-                context,
-                schemaProperty.idKey,
-              ),
-              decoration:
-                  WidgetBuilderInherited.of(context).uiConfig.inputDecoration,
-            );
-          } else {
-            field = CheckboxJFormField(
-              property: schemaPropertySorted,
-              onChanged: (value) {
-                dispatchBooleanEventToParent(context, value!);
-                updateData(context, value);
-                widgetBuilderInherited.notifyChanges();
-              },
-              onSaved: (val) {
-                log(
-                  'onSaved: CheckboxJFormField ${schemaProperty.idKey}  : $val',
-                );
-
-                updateData(context, val);
-              },
-              customValidator: _getCustomValidator(
-                context,
-                schemaProperty.idKey,
-              ),
-            );
-          }
+              updateData(context, val);
+            },
+            customValidator: _getCustomValidator(context, schemaProperty.idKey),
+          );
 
           break;
         default:
@@ -313,8 +292,9 @@ class PropertySchemaBuilder extends StatelessWidget {
               widgetBuilderInherited.notifyChanges();
             },
             customValidator: _getCustomValidator(context, schemaProperty.idKey),
-            decoration:
-                WidgetBuilderInherited.of(context).uiConfig.inputDecoration,
+            decoration: WidgetBuilderInherited.of(
+              context,
+            ).uiConfig.inputDecoration,
           );
       }
     }
@@ -435,8 +415,9 @@ class PropertySchemaBuilder extends StatelessWidget {
     BuildContext context,
     String key,
   ) {
-    final customPickerHandler =
-        WidgetBuilderInherited.of(context).customPickerHandler;
+    final customPickerHandler = WidgetBuilderInherited.of(
+      context,
+    ).customPickerHandler;
 
     if (customPickerHandler == null) return null;
 
@@ -453,8 +434,9 @@ class PropertySchemaBuilder extends StatelessWidget {
     BuildContext context,
     String key,
   ) {
-    final customValidatorHandler =
-        WidgetBuilderInherited.of(context).customValidatorHandler;
+    final customValidatorHandler = WidgetBuilderInherited.of(
+      context,
+    ).customValidatorHandler;
 
     if (customValidatorHandler == null) return null;
 
