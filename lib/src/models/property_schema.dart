@@ -65,7 +65,9 @@ class SchemaProperty extends Schema {
       defaultValue: initialData?[id] ?? safeDefaultValue(json),
       description: json['description'],
       enumm: json['enum'],
-      enumNames: json['enumNames'],
+      // labels default to the stringified enum values when not given
+      enumNames: json['enumNames'] ??
+          (json['enum'] as List?)?.map((e) => e.toString()).toList(),
       minLength: json['minLength'],
       maxLength: json['maxLength'],
       pattern: json['pattern'],
@@ -121,7 +123,8 @@ class SchemaProperty extends Schema {
       ..required = required
       ..dependents = dependents
       ..isMultipleFile = isMultipleFile
-      ..uiMedia = uiMedia;
+      ..uiMedia = uiMedia
+      ..uiGroup = uiGroup;
 
     return newSchema;
   }
@@ -211,6 +214,9 @@ class SchemaProperty extends Schema {
           if (!isGeneralPass && data is Map) {
             uiMedia = JsonFormMedia.fromJson(Map<String, dynamic>.from(data));
           }
+          break;
+        case "ui:group":
+          if (!isGeneralPass) uiGroup = data.toString();
           break;
         case "ui:options":
           fileType = data["fileType"];

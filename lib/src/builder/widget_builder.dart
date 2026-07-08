@@ -99,7 +99,7 @@ class JsonForm extends StatefulWidget {
   final JsonFormSteppedConfig steppedConfig;
 
   @override
-  _JsonFormState createState() => _JsonFormState();
+  State<JsonForm> createState() => _JsonFormState();
 }
 
 class _JsonFormState extends State<JsonForm> {
@@ -137,6 +137,7 @@ class _JsonFormState extends State<JsonForm> {
       onChanged: widget.onChanged,
       initialData: _formData,
       inputDecoration: widget.inputDecoration,
+      displayMode: widget.displayMode,
       child: Builder(builder: (context) {
         final widgetBuilderInherited = WidgetBuilderInherited.of(context);
 
@@ -228,12 +229,12 @@ class _JsonFormState extends State<JsonForm> {
 
 class FormFromSchemaBuilder extends StatelessWidget {
   const FormFromSchemaBuilder({
-    Key? key,
+    super.key,
     required this.mainSchema,
     required this.schema,
     this.showDebugElements = true,
     this.schemaObject,
-  }) : super(key: key);
+  });
   final Schema mainSchema;
   final Schema schema;
   final bool showDebugElements;

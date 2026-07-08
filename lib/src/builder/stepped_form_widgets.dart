@@ -99,6 +99,8 @@ class JsonFormStepHeader extends StatelessWidget {
               style: descriptionStyle ?? textTheme.bodyMedium,
             ),
           ),
+        // breathing room between the header and the step's fields
+        const SizedBox(height: 12),
       ],
     );
   }

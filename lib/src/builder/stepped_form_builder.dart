@@ -98,9 +98,10 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
       final currentId = _pageId(_currentPage);
       _steps = extractJsonFormSteps(widget.mainSchema);
 
-      var newPage = currentId == _reviewPageId
-          ? _pageCount - 1
-          : _steps.indexWhere((step) => step.id == currentId);
+      var newPage =
+          currentId == _reviewPageId
+              ? _pageCount - 1
+              : _steps.indexWhere((step) => step.id == currentId);
       // the current step may have been removed — or every step (clamping
       // against an empty page range would throw)
       if (newPage < 0) {
@@ -138,6 +139,19 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
     if (_currentPage > 0) _animateToPage(_currentPage - 1);
   }
 
+  /// called by a field when it receives a value that could advance the form
+  /// (enum selection). Only advances single-field steps so grouped steps
+  /// still wait for the next button; deferred a frame so the field finishes
+  /// its own onChanged (didChange/validate) before the page animates out.
+  void _requestAutoAdvance() {
+    if (!config.autoAdvanceOnSelect || _isTransitioning) return;
+    if (_currentPage >= _steps.length) return;
+    if (_steps[_currentPage].schemas.length != 1) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _goNext();
+    });
+  }
+
   /// every page change funnels through here (including the review page's
   /// tap-to-edit), so this is where re-entrant transitions are blocked
   void _animateToPage(int page) {
@@ -154,9 +168,9 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
           curve: config.transitionCurve,
         )
         .whenComplete(() {
-      _isTransitioning = false;
-      if (mounted) _syncKeyboardWithPage(page, followFocus);
-    });
+          _isTransitioning = false;
+          if (mounted) _syncKeyboardWithPage(page, followFocus);
+        });
   }
 
   /// the keyboard follows the navigation: when the user was typing, focus
@@ -185,23 +199,42 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
   /// focus node of the first text field on [page]; null for the review
   /// page, a page without text input, or one that was never built
   FocusNode? _firstTextFieldOn(int page) {
-    if (page >= _steps.length) return null;
-    final formContext = _formKeys[_steps[page].id]?.currentContext;
-    if (formContext == null) return null;
+    final nodes = _textFieldsOn(page);
+    return nodes.isEmpty ? null : nodes.first;
+  }
 
-    FocusNode? node;
+  /// focus nodes of every text field on [page], in visual order; empty for
+  /// the review page or one that was never built
+  List<FocusNode> _textFieldsOn(int page) {
+    if (page >= _steps.length) return const [];
+    final formContext = _formKeys[_steps[page].id]?.currentContext;
+    if (formContext == null) return const [];
+
+    final nodes = <FocusNode>[];
     void visit(Element element) {
-      if (node != null) return;
       final widget = element.widget;
       if (widget is EditableText) {
-        node = widget.focusNode;
+        nodes.add(widget.focusNode);
         return;
       }
       element.visitChildren(visit);
     }
 
     (formContext as Element).visitChildren(visit);
-    return node;
+    return nodes;
+  }
+
+  /// keyboard action button pressed in a text field: move to the next text
+  /// field on the same page, or to the next page when it was the last one
+  void _onTextSubmitted() {
+    if (_isTransitioning) return;
+    final fields = _textFieldsOn(_currentPage);
+    final focusedIndex = fields.indexWhere((node) => node.hasFocus);
+    if (focusedIndex >= 0 && focusedIndex < fields.length - 1) {
+      fields[focusedIndex + 1].requestFocus();
+    } else if (_currentPage < _pageCount - 1) {
+      _goNext();
+    }
   }
 
   /// validates every step, jumping back to the first invalid one. A step
@@ -248,105 +281,162 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
   @override
   Widget build(BuildContext context) {
     _scheduleControlsMeasurement();
-    return LayoutBuilder(builder: (context, constraints) {
-      assert(
-        constraints.hasBoundedHeight,
-        'JsonForm with JsonFormDisplayMode.stepped expands to fill its parent '
-        'and must be given a bounded height (e.g. via Expanded or SizedBox). '
-        'Do not place it inside an unconstrained scroll view.',
-      );
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        assert(
+          constraints.hasBoundedHeight,
+          'JsonForm with JsonFormDisplayMode.stepped expands to fill its parent '
+          'and must be given a bounded height (e.g. via Expanded or SizedBox). '
+          'Do not place it inside an unconstrained scroll view.',
+        );
 
-      final totalPages = _pageCount > 0 ? _pageCount : 1;
+        final totalPages = _pageCount > 0 ? _pageCount : 1;
 
-      return Padding(
-        padding: widget.padding,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: config.progressBuilder != null
-                  ? config.progressBuilder!(
-                      context, _currentPage + 1, totalPages)
-                  : JsonFormStepProgress(
-                      currentStep: _currentPage + 1,
-                      totalSteps: totalPages,
-                      duration: config.transitionDuration,
-                      curve: config.transitionCurve,
+        return SteppedFormScope(
+          requestAutoAdvance: _requestAutoAdvance,
+          onTextSubmitted: _onTextSubmitted,
+          controlsClearance: _controlsClearance,
+          child: Padding(
+            padding: widget.padding,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // the form's title, like classic mode's header — but smaller,
+                // since here it stays visible on every step
+                if (widget.mainSchema.title != kNoTitle)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Text(
+                      widget.mainSchema.title,
+                      style: Theme.of(context).textTheme.titleMedium,
+                      textAlign:
+                          WidgetBuilderInherited.of(
+                            context,
+                          ).uiConfig.titleAlign,
                     ),
-            ),
-            // the controls float on top of the page content instead of
-            // stacking below it, so the page keeps the full height — which
-            // matters most when the software keyboard halves it
-            Expanded(
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: PageView.builder(
-                      controller: _pageController,
-                      physics: const NeverScrollableScrollPhysics(),
-                      scrollDirection: config.transitionAxis,
-                      itemCount: _pageCount,
-                      findChildIndexCallback: (key) {
-                        if (key is! ValueKey<String>) return null;
-                        if (key.value == _reviewPageId) return _steps.length;
-                        final index =
-                            _steps.indexWhere((step) => step.id == key.value);
-                        return index < 0 ? null : index;
-                      },
-                      itemBuilder: (context, index) {
-                        if (index >= _steps.length) {
-                          return _ReviewPage(
-                            key: const ValueKey<String>(_reviewPageId),
-                            steps: _steps,
-                            config: config,
-                            onEditStep: _animateToPage,
-                            bottomClearance: _controlsClearance,
-                          );
-                        }
-                        final step = _steps[index];
-                        return _KeepAlivePage(
-                          key: ValueKey<String>(step.id),
-                          // silence animations (e.g. looping ui:media) on
-                          // kept-alive off-screen pages
-                          child: TickerMode(
-                            enabled: index == _currentPage,
-                            child: _StepPage(
-                              step: step,
-                              formKey: _formKeyFor(step),
-                              mainSchema: widget.mainSchema,
-                              config: config,
-                              showDebugElements: widget.showDebugElements,
-                              onSchemaEvent: _onObjectSchemaEvent,
-                              bottomClearance: _controlsClearance,
-                            ),
+                  ),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child:
+                      config.progressBuilder != null
+                          ? config.progressBuilder!(
+                            context,
+                            _currentPage + 1,
+                            totalPages,
+                          )
+                          : JsonFormStepProgress(
+                            currentStep: _currentPage + 1,
+                            totalSteps: totalPages,
+                            duration: config.transitionDuration,
+                            curve: config.transitionCurve,
                           ),
-                        );
-                      },
-                    ),
-                  ),
-                  Align(
-                    alignment: Alignment.bottomCenter,
-                    child: KeyedSubtree(
-                      key: _controlsKey,
-                      child: _StepControls(
-                        config: config,
-                        isFirstPage: _currentPage == 0,
-                        isLastPage: _currentPage >= _pageCount - 1,
-                        onBack: _goBack,
-                        onNext: _goNext,
-                        onSubmit: _trySubmit,
+                ),
+                // the controls float on top of the page content instead of
+                // stacking below it, so the page keeps the full height — which
+                // matters most when the software keyboard halves it
+                Expanded(
+                  child: Stack(
+                    children: [
+                      Positioned.fill(
+                        child: PageView.builder(
+                          controller: _pageController,
+                          physics: const NeverScrollableScrollPhysics(),
+                          scrollDirection: config.transitionAxis,
+                          itemCount: _pageCount,
+                          findChildIndexCallback: (key) {
+                            if (key is! ValueKey<String>) return null;
+                            if (key.value == _reviewPageId)
+                              return _steps.length;
+                            final index = _steps.indexWhere(
+                              (step) => step.id == key.value,
+                            );
+                            return index < 0 ? null : index;
+                          },
+                          itemBuilder: (context, index) {
+                            if (index >= _steps.length) {
+                              return _ReviewPage(
+                                key: const ValueKey<String>(_reviewPageId),
+                                steps: _steps,
+                                config: config,
+                                onEditStep: _animateToPage,
+                                bottomClearance: _controlsClearance,
+                              );
+                            }
+                            final step = _steps[index];
+                            return _KeepAlivePage(
+                              key: ValueKey<String>(step.id),
+                              // silence animations (e.g. looping ui:media) on
+                              // kept-alive off-screen pages
+                              child: TickerMode(
+                                enabled: index == _currentPage,
+                                child: _StepPage(
+                                  step: step,
+                                  formKey: _formKeyFor(step),
+                                  mainSchema: widget.mainSchema,
+                                  config: config,
+                                  showDebugElements: widget.showDebugElements,
+                                  onSchemaEvent: _onObjectSchemaEvent,
+                                  bottomClearance: _controlsClearance,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
                       ),
-                    ),
+                      Align(
+                        alignment: Alignment.bottomCenter,
+                        child: KeyedSubtree(
+                          key: _controlsKey,
+                          child: _StepControls(
+                            config: config,
+                            isFirstPage: _currentPage == 0,
+                            isLastPage: _currentPage >= _pageCount - 1,
+                            onBack: _goBack,
+                            onNext: _goNext,
+                            onSubmit: _trySubmit,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
-      );
-    });
+          ),
+        );
+      },
+    );
   }
+}
+
+/// Exposes the current stepped form's navigation hooks to descendant
+/// fields, so an enum selection or a keyboard action button deep in the
+/// tree can ask to move on.
+class SteppedFormScope extends InheritedWidget {
+  const SteppedFormScope({
+    super.key,
+    required this.requestAutoAdvance,
+    required this.onTextSubmitted,
+    required this.controlsClearance,
+    required super.child,
+  });
+
+  final VoidCallback requestAutoAdvance;
+
+  /// measured height of the floating controls; fields use it as bottom
+  /// [TextField.scrollPadding] so focus-driven auto-scroll clears them
+  final double controlsClearance;
+
+  /// keyboard action button (enter/done/next) pressed in a text field:
+  /// focus the step's next text field, or advance to the next page
+  final VoidCallback onTextSubmitted;
+
+  static SteppedFormScope? maybeOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<SteppedFormScope>();
+
+  @override
+  bool updateShouldNotify(SteppedFormScope oldWidget) =>
+      controlsClearance != oldWidget.controlsClearance;
 }
 
 /// One step of the form: media, header and the step's fields wrapped in
@@ -459,8 +549,10 @@ class _ReviewPage extends StatelessWidget {
                 title: Text(
                   schema.title != kNoTitle ? schema.title : schema.id,
                 ),
-                subtitle: Text(_formatValue(
-                    schema, jsonFormDataAtPath(data, schema.idKey))),
+                subtitle: _valueWidget(
+                  schema,
+                  jsonFormDataAtPath(data, schema.idKey),
+                ),
                 trailing: const Icon(Icons.edit_outlined, size: 20),
                 onTap: () => onEditStep(i),
               ),
@@ -469,10 +561,37 @@ class _ReviewPage extends StatelessWidget {
     );
   }
 
+  /// file answers are data-url strings (or lists of them) — never show
+  /// those; render one file icon per uploaded file instead
+  Widget _valueWidget(Schema schema, dynamic value) {
+    final isFileField =
+        schema is SchemaProperty && schema.format == PropertyFormat.dataurl;
+    if (isFileField) {
+      final count =
+          value == null || (value is List && value.isEmpty)
+              ? 0
+              : value is List
+              ? value.length
+              : 1;
+      if (count == 0) return const Text('—');
+      return Row(
+        children: [
+          for (var i = 0; i < count; i++)
+            const Padding(
+              padding: EdgeInsets.only(right: 4),
+              child: Icon(Icons.insert_drive_file_outlined, size: 18),
+            ),
+        ],
+      );
+    }
+    return Text(_formatValue(schema, value));
+  }
+
   String _formatValue(Schema schema, dynamic value) {
     if (value == null || (value is String && value.isEmpty)) {
       return '—';
     }
+    if (value is bool) return config.formatBoolean(value);
     // show the enum's display name, like the field itself does
     if (schema is SchemaProperty &&
         schema.enumm != null &&
@@ -522,22 +641,26 @@ class _StepControls extends StatelessWidget {
 
     Widget nextButton;
     if (isLastPage) {
-      nextButton = uiConfig.submitButtonBuilder != null
-          ? uiConfig.submitButtonBuilder!(onSubmit)
-          : ElevatedButton(
-              onPressed: onSubmit,
-              child: Text(config.submitButtonText),
-            );
+      nextButton =
+          uiConfig.submitButtonBuilder != null
+              ? uiConfig.submitButtonBuilder!(onSubmit)
+              : ElevatedButton(
+                onPressed: onSubmit,
+                child: Text(config.submitButtonText),
+              );
     } else {
-      nextButton = config.nextButtonBuilder != null
-          ? config.nextButtonBuilder!(onNext)
-          : ElevatedButton.icon(
-              onPressed: onNext,
-              icon: Icon(isVertical
-                  ? Icons.keyboard_arrow_down
-                  : Icons.keyboard_arrow_right),
-              label: Text(config.nextButtonText),
-            );
+      nextButton =
+          config.nextButtonBuilder != null
+              ? config.nextButtonBuilder!(onNext)
+              : ElevatedButton.icon(
+                onPressed: onNext,
+                icon: Icon(
+                  isVertical
+                      ? Icons.keyboard_arrow_down
+                      : Icons.keyboard_arrow_right,
+                ),
+                label: Text(config.nextButtonText),
+              );
     }
 
     return Row(
@@ -546,13 +669,23 @@ class _StepControls extends StatelessWidget {
         if (!isFirstPage)
           config.backButtonBuilder != null
               ? config.backButtonBuilder!(onBack)
-              : FilledButton.tonalIcon(
-                  onPressed: onBack,
-                  icon: Icon(isVertical
+              // deliberately quieter than the next/submit button, but with
+              // an opaque background so it stays legible over anything the
+              // page scrolls underneath it
+              : TextButton.icon(
+                onPressed: onBack,
+                style: TextButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.surface,
+                  foregroundColor:
+                      Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                icon: Icon(
+                  isVertical
                       ? Icons.keyboard_arrow_up
-                      : Icons.keyboard_arrow_left),
-                  label: Text(config.backButtonText),
-                )
+                      : Icons.keyboard_arrow_left,
+                ),
+                label: Text(config.backButtonText),
+              )
         else
           const SizedBox.shrink(),
         nextButton,

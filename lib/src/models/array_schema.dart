@@ -10,10 +10,10 @@ import '../models/models.dart';
 
 class SchemaArray extends Schema {
   SchemaArray({
-    required String id,
+    required super.id,
     required this.itemsBaseSchema,
     String? title,
-    String? description,
+    super.description,
     this.defaultValue,
     this.minItems,
     this.maxItems,
@@ -21,9 +21,7 @@ class SchemaArray extends Schema {
     this.items = const [],
     this.required = false,
   }) : super(
-          id: id,
           title: title ?? 'no-title',
-          description: description,
           type: SchemaType.array,
         );
 
@@ -68,7 +66,8 @@ class SchemaArray extends Schema {
     )
       ..parentIdKey = parentIdKey ?? this.parentIdKey
       ..dependentsAddedBy = dependentsAddedBy ?? this.dependentsAddedBy
-      ..uiMedia = uiMedia;
+      ..uiMedia = uiMedia
+      ..uiGroup = uiGroup;
 
     newSchema.items = items
         .map(
@@ -96,6 +95,9 @@ class SchemaArray extends Schema {
           if (data is Map) {
             uiMedia = JsonFormMedia.fromJson(Map<String, dynamic>.from(data));
           }
+          break;
+        case "ui:group":
+          uiGroup = data.toString();
           break;
         default:
           break;
