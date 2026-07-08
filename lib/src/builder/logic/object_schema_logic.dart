@@ -127,8 +127,10 @@ class ObjectSchemaInherited extends InheritedWidget {
         if (active) {
           schemaObject.properties!.add(schema);
         } else {
+          // match by raw id: idKey is path-qualified for nested objects and
+          // would never match, leaving the dependent field stuck in the form
           schemaObject.properties!
-              .removeWhere((element) => element.id == schema.idKey);
+              .removeWhere((element) => element.id == schema.id);
         }
 
         schemaProperty.isDependentsActive = active;
