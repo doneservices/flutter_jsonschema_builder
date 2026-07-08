@@ -17,7 +17,7 @@ class RadioButtonJFormField extends PropertyFieldWidget<dynamic> {
   });
 
   @override
-  _RadioButtonJFormFieldState createState() => _RadioButtonJFormFieldState();
+  State<StatefulWidget> createState() => _RadioButtonJFormFieldState();
 }
 
 class _RadioButtonJFormFieldState extends State<RadioButtonJFormField> {
@@ -87,23 +87,33 @@ class _RadioButtonJFormFieldState extends State<RadioButtonJFormField> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: List<Widget>.generate(
-                  widget.property.enumNames?.length ?? 0,
+                  widget.property.enumNames?.length ??
+                      widget.property.enumm?.length ??
+                      0,
                   (int i) => RadioListTile(
+                        dense: true,
+                        contentPadding: EdgeInsets.zero,
+                        visualDensity: VisualDensity.compact,
                         value: widget.property.enumm != null
                             ? widget.property.enumm![i]
                             : i,
-                        title: Text(widget.property.enumNames?[i],
+                        title: Text(
+                            widget.property.enumNames?[i] ??
+                                widget.property.enumm![i].toString(),
                             style: widget.property.readOnly
                                 ? Theme.of(context)
                                     .textTheme
                                     .titleMedium!
                                     .apply(color: Colors.grey)
                                 : Theme.of(context).textTheme.titleMedium),
+                        // RadioGroup (the replacement) requires Flutter
+                        // >=3.32; migrate when the floor moves past it
+                        // ignore: deprecated_member_use
                         groupValue: groupValue,
+                        // ignore: deprecated_member_use
                         onChanged: widget.property.readOnly
                             ? null
                             : (dynamic value) {
-                                print(value);
                                 groupValue = value;
                                 if (value != null) {
                                   field.didChange(groupValue);

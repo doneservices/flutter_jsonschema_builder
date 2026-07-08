@@ -55,12 +55,8 @@ const dependencyJsonSchema = '''
 }
 ''';
 
-Future<void> selectDropdownValue(
-    WidgetTester tester, String key, String value) async {
-  // the step's page shares the property's key — target the dropdown itself
-  await tester.tap(find.byWidgetPredicate((widget) =>
-      widget is DropdownButtonFormField && widget.key == Key(key)));
-  await tester.pumpAndSettle();
+/// enums render as radio lists in stepped mode — select by tapping the label
+Future<void> selectRadioValue(WidgetTester tester, String value) async {
   await tester.tap(find.text(value).last);
   await tester.pumpAndSettle();
 }
@@ -122,6 +118,28 @@ void main() {
       expect(steps[1].media?.type, 'image');
       expect(steps[1].media?.src, 'https://example.com/age.png');
       expect(steps[2].media, isNull);
+    });
+
+    test(
+        'ui:group merges flat fields onto one step at the first member\'s '
+        'position, with the first media carried by a member', () {
+      const uiSchema = '''
+      {
+        "age": {"ui:group": "personal"},
+        "bio": {
+          "ui:group": "personal",
+          "ui:media": {"type": "image", "src": "https://example.com/p.png"}
+        }
+      }
+      ''';
+      final steps =
+          extractJsonFormSteps(parseSchema(testJsonSchema, uiSchema: uiSchema));
+
+      expect(steps.length, 2);
+      expect(steps[1].id, 'group:personal');
+      expect(steps[1].schemas.map((s) => s.id), ['age', 'bio']);
+      expect(steps[1].parent.id, kGenesisIdKey);
+      expect(steps[1].media?.src, 'https://example.com/p.png');
     });
 
     test('duplicate property ids still produce unique step ids', () {
@@ -205,7 +223,7 @@ void main() {
       expect(find.text('1 / 3'), findsOneWidget);
       expect(find.text('Next'), findsOneWidget);
       // no back button on the first step
-      expect(find.text('Back'), findsNothing);
+      expect(find.text('Previous'), findsNothing);
     });
 
     testWidgets('validation blocks advancing past a required field',
@@ -254,9 +272,9 @@ void main() {
       expect(find.text('2 / 3'), findsOneWidget);
       expect(find.textContaining('Age'), findsOneWidget);
       expect(find.byKey(const Key('custom-image-media')), findsOneWidget);
-      expect(find.text('Back'), findsOneWidget);
+      expect(find.text('Previous'), findsOneWidget);
 
-      await tester.tap(find.text('Back'));
+      await tester.tap(find.text('Previous'));
       await tester.pumpAndSettle();
 
       // the text entered on step 1 survived the round trip
@@ -302,6 +320,37 @@ void main() {
       // the number field stores its raw text value, as in fullForm mode
       expect(savedData['age'], '36');
       expect(savedData['bio'], 'First programmer');
+    });
+
+    testWidgets('review step renders file answers as icons, not data urls',
+        (tester) async {
+      const schema = '''
+      {
+        "type": "object",
+        "properties": {
+          "photo": {"type": "string", "format": "data-url", "title": "Photo"},
+          "bio": {"type": "string", "title": "Bio"}
+        }
+      }
+      ''';
+      await tester.pumpWidget(buildTestApp(JsonForm(
+        jsonSchema: schema,
+        displayMode: JsonFormDisplayMode.stepped,
+        steppedConfig: const JsonFormSteppedConfig(showReviewStep: true),
+        fileHandler: () => {'*': (_) async => null},
+        initialData: const {'photo': 'data:image/png;base64,AAAA'},
+        onFormDataSaved: (_) {},
+      )));
+      await tester.pump();
+
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
+
+      // review page: an icon for the file, never the raw data url
+      expect(find.byIcon(Icons.insert_drive_file_outlined), findsOneWidget);
+      expect(find.textContaining('base64'), findsNothing);
     });
 
     testWidgets('review step lists answers and jumps back on tap',
@@ -353,6 +402,10 @@ void main() {
       await tester.pumpWidget(buildTestApp(JsonForm(
         jsonSchema: dependencyJsonSchema,
         displayMode: JsonFormDisplayMode.stepped,
+        // auto-advance off: this test stays on the trigger step to watch
+        // the dependent step come and go
+        steppedConfig:
+            const JsonFormSteppedConfig(autoAdvanceOnSelect: false),
         onFormDataSaved: (data) => savedData = data,
       )));
       await tester.pump();
@@ -360,14 +413,14 @@ void main() {
       expect(find.text('1 / 2'), findsOneWidget);
 
       // selecting the trigger value inserts the dependent step...
-      await selectDropdownValue(tester, 'pet', 'cat');
+      await selectRadioValue(tester, 'cat');
       expect(find.text('1 / 3'), findsOneWidget);
 
       // ...and selecting the other value removes it again
-      await selectDropdownValue(tester, 'pet', 'none');
+      await selectRadioValue(tester, 'none');
       expect(find.text('1 / 2'), findsOneWidget);
 
-      await selectDropdownValue(tester, 'pet', 'cat');
+      await selectRadioValue(tester, 'cat');
       expect(find.text('1 / 3'), findsOneWidget);
 
       // the inserted step comes right after its trigger and is navigable
@@ -390,6 +443,68 @@ void main() {
       expect(savedData['pet'], 'cat');
       expect(savedData['petName'], 'Whiskers');
       expect(savedData['bio'], 'Cat person');
+    });
+
+    testWidgets(
+        'selecting an enum value auto-advances a single-field step '
+        'but not a grouped one', (tester) async {
+      const schema = '''
+      {
+        "type": "object",
+        "properties": {
+          "pet": {"type": "string", "title": "Pet?", "enum": ["none", "cat"]},
+          "color": {"type": "string", "title": "Color?", "enum": ["red", "blue"]},
+          "bio": {"type": "string", "title": "Bio"}
+        }
+      }
+      ''';
+      const uiSchema = '''
+      {
+        "color": {"ui:group": "extra"},
+        "bio": {"ui:group": "extra"}
+      }
+      ''';
+      await tester.pumpWidget(buildTestApp(JsonForm(
+        jsonSchema: schema,
+        uiSchema: uiSchema,
+        displayMode: JsonFormDisplayMode.stepped,
+        onFormDataSaved: (_) {},
+      )));
+      await tester.pump();
+
+      expect(find.text('1 / 2'), findsOneWidget);
+      await selectRadioValue(tester, 'cat');
+      // single-field step: the selection advanced the page
+      expect(find.text('2 / 2'), findsOneWidget);
+
+      // grouped step: selecting does not advance
+      await selectRadioValue(tester, 'blue');
+      expect(find.text('2 / 2'), findsOneWidget);
+    });
+
+    testWidgets(
+        'the keyboard action button moves to the next text field on the '
+        'page, then to the next page', (tester) async {
+      await tester.pumpWidget(buildTestApp(JsonForm(
+        jsonSchema: testJsonSchema,
+        displayMode: JsonFormDisplayMode.stepped,
+        onFormDataSaved: (_) {},
+      )));
+      await tester.pump();
+
+      // step 1 holds two text fields (first, last)
+      await tester.showKeyboard(find.byKey(const Key('name.first')));
+      await tester.enterText(find.byKey(const Key('name.first')), 'Ada');
+      await tester.testTextInput.receiveAction(TextInputAction.next);
+      await tester.pumpAndSettle();
+
+      expect(find.text('1 / 3'), findsOneWidget);
+      expect(focusedTextField(tester), isNotNull);
+
+      // enter on the page's last text field advances the page
+      await tester.testTextInput.receiveAction(TextInputAction.next);
+      await tester.pumpAndSettle();
+      expect(find.text('2 / 3'), findsOneWidget);
     });
 
     testWidgets('a double-tap on Next advances a single step', (tester) async {
@@ -546,7 +661,7 @@ void main() {
       await flushTextDebounce(tester);
       expect(focusedTextField(tester), isNotNull);
 
-      await tester.tap(find.text('Back'));
+      await tester.tap(find.text('Previous'));
       await tester.pumpAndSettle();
       expect(focusedTextField(tester), isNull);
     });

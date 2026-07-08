@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_jsonschema_builder/src/builder/logic/object_schema_logic.dart';
 import 'package:flutter_jsonschema_builder/src/builder/logic/widget_builder_logic.dart';
+import 'package:flutter_jsonschema_builder/src/builder/stepped_form_builder.dart';
 import 'package:flutter_jsonschema_builder/src/builder/widget_builder.dart';
 import 'package:flutter_jsonschema_builder/src/fields/fields.dart';
 import 'package:flutter_jsonschema_builder/src/fields/radio_button_form_field.dart';
@@ -16,12 +17,12 @@ import 'package:intl/intl.dart';
 
 class PropertySchemaBuilder extends StatelessWidget {
   const PropertySchemaBuilder({
-    Key? key,
+    super.key,
     required this.mainSchema,
     required this.schemaProperty,
     this.showDebugElements = true,
     this.onChangeListen,
-  }) : super(key: key);
+  });
   final Schema mainSchema;
   final SchemaProperty schemaProperty;
   final ValueChanged<dynamic>? onChangeListen;
@@ -29,19 +30,43 @@ class PropertySchemaBuilder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget _field = const SizedBox.shrink();
+    Widget field = const SizedBox.shrink();
     final widgetBuilderInherited = WidgetBuilderInherited.of(context);
 
     // sort
     final schemaPropertySorted = schemaProperty;
 
-    if (schemaProperty.widget == 'radio') {
-      _field = RadioButtonJFormField(
+    final hasEnum =
+        schemaProperty.enumm != null &&
+        (schemaProperty.enumm!.isNotEmpty ||
+            (schemaProperty.enumNames != null &&
+                schemaProperty.enumNames!.isNotEmpty));
+    // In stepped mode, enums default to radio unless a widget is set explicitly.
+    final useRadio =
+        schemaProperty.widget == 'radio' ||
+        (hasEnum &&
+            schemaProperty.widget == null &&
+            widgetBuilderInherited.displayMode == JsonFormDisplayMode.stepped);
+
+    if (useRadio) {
+      field = RadioButtonJFormField(
         property: schemaPropertySorted,
         onChanged: (value) {
-          dispatchBooleanEventToParent(context, value != null);
+          // enum radios must resolve value-based (oneOf) dependencies just
+          // like the dropdown; the boolean event only handles presence
+          if (hasEnum) {
+            dispatchSelectedForDropDownEventToParent(
+              context,
+              value,
+              id: schemaProperty.id,
+            );
+          } else {
+            dispatchBooleanEventToParent(context, value != null);
+          }
           updateData(context, value);
           widgetBuilderInherited.notifyChanges();
+          if (value != null)
+            SteppedFormScope.maybeOf(context)?.requestAutoAdvance();
         },
         onSaved: (val) {
           log('onSaved: RadioButtonJFormField ${schemaProperty.idKey}  : $val');
@@ -51,11 +76,8 @@ class PropertySchemaBuilder extends StatelessWidget {
         customValidator: _getCustomValidator(context, schemaProperty.idKey),
         decoration: WidgetBuilderInherited.of(context).uiConfig.inputDecoration,
       );
-    } else if (schemaProperty.enumm != null &&
-        (schemaProperty.enumm!.isNotEmpty ||
-            (schemaProperty.enumNames != null &&
-                schemaProperty.enumNames!.isNotEmpty))) {
-      _field = DropDownJFormField(
+    } else if (hasEnum) {
+      field = DropDownJFormField(
         property: schemaPropertySorted,
         customPickerHandler: _getCustomPickerHanlder(
           context,
@@ -66,16 +88,21 @@ class PropertySchemaBuilder extends StatelessWidget {
           updateData(context, val);
         },
         onChanged: (value) {
-          dispatchSelectedForDropDownEventToParent(context, value,
-              id: schemaProperty.id);
+          dispatchSelectedForDropDownEventToParent(
+            context,
+            value,
+            id: schemaProperty.id,
+          );
           updateData(context, value);
           widgetBuilderInherited.notifyChanges();
+          if (value != null)
+            SteppedFormScope.maybeOf(context)?.requestAutoAdvance();
         },
         customValidator: _getCustomValidator(context, schemaProperty.idKey),
         decoration: WidgetBuilderInherited.of(context).uiConfig.inputDecoration,
       );
     } else if (schemaProperty.oneOf != null) {
-      _field = DropdownOneOfJFormField(
+      field = DropdownOneOfJFormField(
         property: schemaPropertySorted,
         customPickerHandler: _getCustomPickerHanlder(
           context,
@@ -83,13 +110,18 @@ class PropertySchemaBuilder extends StatelessWidget {
         ),
         onSaved: (val) {
           if (val is OneOfModel) {
-            log('onSaved: SelectedFormField  ${schemaProperty.idKey}  : ${val.oneOfModelEnum?.first}');
+            log(
+              'onSaved: SelectedFormField  ${schemaProperty.idKey}  : ${val.oneOfModelEnum?.first}',
+            );
             updateData(context, val.oneOfModelEnum?.first);
           }
         },
         onChanged: (value) {
-          dispatchSelectedForDropDownEventToParent(context, value,
-              id: schemaProperty.id);
+          dispatchSelectedForDropDownEventToParent(
+            context,
+            value,
+            id: schemaProperty.id,
+          );
 
           if (value is OneOfModel) {
             updateData(context, value.oneOfModelEnum?.first);
@@ -104,7 +136,7 @@ class PropertySchemaBuilder extends StatelessWidget {
         case SchemaType.string:
           if (schemaProperty.format == PropertyFormat.date ||
               schemaProperty.format == PropertyFormat.datetime) {
-            _field = DateJFormField(
+            field = DateJFormField(
               property: schemaPropertySorted,
               onSaved: (val) {
                 if (val == null) return;
@@ -115,7 +147,9 @@ class PropertySchemaBuilder extends StatelessWidget {
                   date = DateFormat(dateTimeFormatString).format(val);
                 }
 
-                log('onSaved: DateJFormField  ${schemaProperty.idKey}  : $date');
+                log(
+                  'onSaved: DateJFormField  ${schemaProperty.idKey}  : $date',
+                );
                 updateData(context, date);
               },
               onChanged: (value) {
@@ -131,8 +165,10 @@ class PropertySchemaBuilder extends StatelessWidget {
                 updateData(context, date);
                 widgetBuilderInherited.notifyChanges();
               },
-              customValidator:
-                  _getCustomValidator(context, schemaProperty.idKey),
+              customValidator: _getCustomValidator(
+                context,
+                schemaProperty.idKey,
+              ),
               decoration:
                   WidgetBuilderInherited.of(context).uiConfig.inputDecoration,
             );
@@ -140,16 +176,20 @@ class PropertySchemaBuilder extends StatelessWidget {
           }
 
           if (schemaProperty.format == PropertyFormat.dataurl) {
-            assert(WidgetBuilderInherited.of(context).fileHandler != null,
-                'File handler can not be null when using file inputs');
-            _field = FileJFormField(
+            assert(
+              WidgetBuilderInherited.of(context).fileHandler != null,
+              'File handler can not be null when using file inputs',
+            );
+            field = FileJFormField(
               property: schemaPropertySorted,
               fileHandler: getCustomFileHandler(
-                  WidgetBuilderInherited.of(context).fileHandler!,
-                  schemaProperty.id),
+                WidgetBuilderInherited.of(context).fileHandler!,
+                schemaProperty.id,
+              ),
               initialFileValueHandler: getCustomInitialFileValueHandler(
-                  WidgetBuilderInherited.of(context).initialFileValueHandler,
-                  schemaProperty.id),
+                WidgetBuilderInherited.of(context).initialFileValueHandler,
+                schemaProperty.id,
+              ),
               onSaved: (val) {
                 log('onSaved: FileJFormField  ${schemaProperty.idKey}  : $val');
                 updateData(context, val);
@@ -158,23 +198,26 @@ class PropertySchemaBuilder extends StatelessWidget {
                 print(value);
 
                 dispatchBooleanEventToParent(
-                    context,
-                    schemaProperty.isMultipleFile
-                        ? value is List && value.isNotEmpty
-                        : value != null);
+                  context,
+                  schemaProperty.isMultipleFile
+                      ? value is List && value.isNotEmpty
+                      : value != null,
+                );
 
                 updateData(context, value);
                 widgetBuilderInherited.notifyChanges();
               },
-              customValidator:
-                  _getCustomValidator(context, schemaProperty.idKey),
+              customValidator: _getCustomValidator(
+                context,
+                schemaProperty.idKey,
+              ),
               decoration:
                   WidgetBuilderInherited.of(context).uiConfig.inputDecoration,
             );
             break;
           }
 
-          _field = TextJFormField(
+          field = TextJFormField(
             property: schemaPropertySorted,
             onSaved: (val) {
               log('onSaved: TextJFormField ${schemaProperty.idKey}  : $val');
@@ -192,7 +235,7 @@ class PropertySchemaBuilder extends StatelessWidget {
           break;
         case SchemaType.integer:
         case SchemaType.number:
-          _field = NumberJFormField(
+          field = NumberJFormField(
             property: schemaPropertySorted,
             onSaved: (val) {
               log('onSaved: NumberJFormField ${schemaProperty.idKey}  : $val');
@@ -213,7 +256,7 @@ class PropertySchemaBuilder extends StatelessWidget {
           break;
         case SchemaType.boolean:
           if (schemaProperty.widget == 'radio') {
-            _field = RadioButtonJFormField(
+            field = RadioButtonJFormField(
               property: schemaPropertySorted,
               onChanged: (value) {
                 dispatchBooleanEventToParent(context, value != null);
@@ -221,17 +264,21 @@ class PropertySchemaBuilder extends StatelessWidget {
                 widgetBuilderInherited.notifyChanges();
               },
               onSaved: (val) {
-                log('onSaved: RadioButtonJFormField ${schemaProperty.idKey}  : $val');
+                log(
+                  'onSaved: RadioButtonJFormField ${schemaProperty.idKey}  : $val',
+                );
 
                 updateData(context, val);
               },
-              customValidator:
-                  _getCustomValidator(context, schemaProperty.idKey),
+              customValidator: _getCustomValidator(
+                context,
+                schemaProperty.idKey,
+              ),
               decoration:
                   WidgetBuilderInherited.of(context).uiConfig.inputDecoration,
             );
           } else {
-            _field = CheckboxJFormField(
+            field = CheckboxJFormField(
               property: schemaPropertySorted,
               onChanged: (value) {
                 dispatchBooleanEventToParent(context, value!);
@@ -239,18 +286,22 @@ class PropertySchemaBuilder extends StatelessWidget {
                 widgetBuilderInherited.notifyChanges();
               },
               onSaved: (val) {
-                log('onSaved: CheckboxJFormField ${schemaProperty.idKey}  : $val');
+                log(
+                  'onSaved: CheckboxJFormField ${schemaProperty.idKey}  : $val',
+                );
 
                 updateData(context, val);
               },
-              customValidator:
-                  _getCustomValidator(context, schemaProperty.idKey),
+              customValidator: _getCustomValidator(
+                context,
+                schemaProperty.idKey,
+              ),
             );
           }
 
           break;
         default:
-          _field = TextJFormField(
+          field = TextJFormField(
             property: schemaPropertySorted,
             onSaved: (val) {
               log('onSaved: TextJFormField ${schemaProperty.idKey}  : $val');
@@ -281,7 +332,7 @@ class PropertySchemaBuilder extends StatelessWidget {
               fontWeight: FontWeight.bold,
             ),
           ),
-        _field,
+        field,
       ],
     );
   }
@@ -289,33 +340,41 @@ class PropertySchemaBuilder extends StatelessWidget {
   void updateData(BuildContext context, dynamic val) {
     final widgetBuilderInherited = WidgetBuilderInherited.of(context);
     widgetBuilderInherited.updateObjectData(
-        WidgetBuilderInherited.of(context).data, schemaProperty.idKey, val);
+      WidgetBuilderInherited.of(context).data,
+      schemaProperty.idKey,
+      val,
+    );
   }
 
   // @temp Functions
   /// Cuando se valida si es string o no
   void dispatchStringEventToParent(BuildContext context, String value) {
     if (value.isEmpty && schemaProperty.isDependentsActive) {
-      ObjectSchemaInherited.of(context)
-          .listenChangeProperty(false, schemaProperty);
+      ObjectSchemaInherited.of(
+        context,
+      ).listenChangeProperty(false, schemaProperty);
     }
 
     if (value.isNotEmpty && !schemaProperty.isDependentsActive) {
-      ObjectSchemaInherited.of(context)
-          .listenChangeProperty(true, schemaProperty);
+      ObjectSchemaInherited.of(
+        context,
+      ).listenChangeProperty(true, schemaProperty);
     }
   }
 
   void dispatchSelectedForDropDownEventToParent(
-      BuildContext context, dynamic value,
-      {String? id}) {
+    BuildContext context,
+    dynamic value, {
+    String? id,
+  }) {
     debugPrint('dispatchSelectedForDropDownEventToParent()  $value ID: $id');
     ObjectSchemaInherited.of(context).listenChangeProperty(
-        (value != null && (value is String ? value.isNotEmpty : true)),
-        schemaProperty,
-        optionalValue: value,
-        idOptional: id,
-        mainSchema: mainSchema);
+      (value != null && (value is String ? value.isNotEmpty : true)),
+      schemaProperty,
+      optionalValue: value,
+      idOptional: id,
+      mainSchema: mainSchema,
+    );
     // }
   }
 
@@ -323,32 +382,33 @@ class PropertySchemaBuilder extends StatelessWidget {
   void dispatchBooleanEventToParent(BuildContext context, bool value) {
     debugPrint('dispatchBooleanEventToParent()  $value');
     if (value != schemaProperty.isDependentsActive) {
-      ObjectSchemaInherited.of(context)
-          .listenChangeProperty(value, schemaProperty);
+      ObjectSchemaInherited.of(
+        context,
+      ).listenChangeProperty(value, schemaProperty);
     }
   }
 
   Future<List<SchemaFormFile>?> Function(SchemaProperty property)
-      getCustomFileHandler(FileHandler customFileHandler, String key) {
+  getCustomFileHandler(FileHandler customFileHandler, String key) {
     final handlers = customFileHandler();
     assert(handlers.isNotEmpty, 'CustomFileHandler must not be empty');
 
     if (handlers.containsKey(key)) {
-      return handlers[key] as Future<List<SchemaFormFile>?> Function(
-          SchemaProperty);
+      return handlers[key]
+          as Future<List<SchemaFormFile>?> Function(SchemaProperty);
     }
 
     if (handlers.containsKey('*')) {
       assert(handlers['*'] != null, 'Default file handler must not be null');
-      return handlers['*'] as Future<List<SchemaFormFile>?> Function(
-          SchemaProperty);
+      return handlers['*']
+          as Future<List<SchemaFormFile>?> Function(SchemaProperty);
     }
 
     throw Exception('no file handler found');
   }
 
   Future<List<SchemaFormFile>?> Function(dynamic defaultValue)?
-      getCustomInitialFileValueHandler(
+  getCustomInitialFileValueHandler(
     InitialFileValueHandler? initialFileValueHandler,
     String key,
   ) {
@@ -372,7 +432,9 @@ class PropertySchemaBuilder extends StatelessWidget {
   }
 
   Future<dynamic> Function(SchemaProperty)? _getCustomPickerHanlder(
-      BuildContext context, String key) {
+    BuildContext context,
+    String key,
+  ) {
     final customPickerHandler =
         WidgetBuilderInherited.of(context).customPickerHandler;
 
@@ -388,7 +450,9 @@ class PropertySchemaBuilder extends StatelessWidget {
   }
 
   String? Function(dynamic)? _getCustomValidator(
-      BuildContext context, String key) {
+    BuildContext context,
+    String key,
+  ) {
     final customValidatorHandler =
         WidgetBuilderInherited.of(context).customValidatorHandler;
 

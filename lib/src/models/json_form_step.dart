@@ -23,7 +23,9 @@ class JsonFormStep {
 
   final String? title;
   final String? description;
-  final JsonFormMedia? media;
+
+  /// mutable: a later `ui:group` member can contribute the group's media
+  JsonFormMedia? media;
 }
 
 /// Maps a plain JSON schema to a list of steps — no ui schema required:
@@ -32,10 +34,14 @@ class JsonFormStep {
 /// * a nested object becomes a single step holding all its fields, titled
 ///   by the object's own `title`/`description` (the same ones classic mode
 ///   renders as a section header)
-/// * `ui:media` on a field or object attaches media to its step
+/// * fields sharing a `ui:group` value share one step (at the position of
+///   the group's first field), keeping the data shape flat
+/// * `ui:media` on a field or object attaches media to its step; for a
+///   group, the first member carrying media wins
 List<JsonFormStep> extractJsonFormSteps(SchemaObject root) {
   final steps = <JsonFormStep>[];
   final usedIds = <String, int>{};
+  final groupSteps = <String, JsonFormStep>{};
 
   // dependency-added schemas can share an idKey (or lack one entirely);
   // suffix repeats so page keys and per-step form keys stay unique
@@ -59,12 +65,22 @@ List<JsonFormStep> extractJsonFormSteps(SchemaObject root) {
         media: child.uiMedia,
       ));
     } else {
-      steps.add(JsonFormStep(
-        id: uniqueId(child.idKey),
+      final group = child.uiGroup;
+      final existing = group != null ? groupSteps[group] : null;
+      if (existing != null) {
+        existing.schemas.add(child);
+        existing.media ??= child.uiMedia;
+        continue;
+      }
+
+      final step = JsonFormStep(
+        id: uniqueId(group != null ? 'group:$group' : child.idKey),
         parent: root,
         schemas: [child],
         media: child.uiMedia,
-      ));
+      );
+      if (group != null) groupSteps[group] = step;
+      steps.add(step);
     }
   }
 

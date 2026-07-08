@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_jsonschema_builder/src/builder/field_header_widget.dart';
 import 'package:flutter_jsonschema_builder/src/builder/logic/widget_builder_logic.dart';
+import 'package:flutter_jsonschema_builder/src/builder/stepped_form_builder.dart';
 import 'package:flutter_jsonschema_builder/src/fields/fields.dart';
 
 class NumberJFormField extends PropertyFieldWidget<String?> {
@@ -17,7 +18,7 @@ class NumberJFormField extends PropertyFieldWidget<String?> {
   });
 
   @override
-  _NumberJFormFieldState createState() => _NumberJFormFieldState();
+  State<StatefulWidget> createState() => _NumberJFormFieldState();
 }
 
 class _NumberJFormFieldState extends State<NumberJFormField> {
@@ -38,6 +39,8 @@ class _NumberJFormFieldState extends State<NumberJFormField> {
   @override
   Widget build(BuildContext context) {
     final uiConfig = WidgetBuilderInherited.of(context).uiConfig;
+    // in stepped mode the keyboard action button advances the form
+    final steppedScope = SteppedFormScope.maybeOf(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -45,8 +48,22 @@ class _NumberJFormFieldState extends State<NumberJFormField> {
         TextFormField(
           key: Key(widget.property.idKey),
           keyboardType: TextInputType.number,
+          textInputAction: steppedScope != null ? TextInputAction.next : null,
+          // focus-driven auto-scroll must clear the floating controls
+          scrollPadding:
+              steppedScope != null
+                  ? EdgeInsets.fromLTRB(
+                    20,
+                    20,
+                    20,
+                    steppedScope.controlsClearance + 20,
+                  )
+                  : const EdgeInsets.all(20),
+          // onEditingComplete (not onFieldSubmitted) replaces the default
+          // focus handling, so the scope decides where focus goes
+          onEditingComplete: steppedScope?.onTextSubmitted,
           inputFormatters: <TextInputFormatter>[
-            FilteringTextInputFormatter.allow(RegExp('[0-9.,]+'))
+            FilteringTextInputFormatter.allow(RegExp('[0-9.,]+')),
           ],
           autofocus: false,
           initialValue: widget.property.defaultValue,
@@ -60,12 +77,12 @@ class _NumberJFormFieldState extends State<NumberJFormField> {
               if (widget.onChanged != null) widget.onChanged!(value);
             });
           },
-          style: widget.property.readOnly
-              ? Theme.of(context)
-                  .textTheme
-                  .titleMedium!
-                  .apply(color: Colors.grey)
-              : Theme.of(context).textTheme.titleMedium,
+          style:
+              widget.property.readOnly
+                  ? Theme.of(
+                    context,
+                  ).textTheme.titleMedium!.apply(color: Colors.grey)
+                  : Theme.of(context).textTheme.titleMedium,
           validator: (String? value) {
             if (widget.property.required && value != null && value.isEmpty) {
               return uiConfig.requiredText ?? 'Required';
@@ -81,16 +98,17 @@ class _NumberJFormFieldState extends State<NumberJFormField> {
               return widget.customValidator!(value);
             return null;
           },
-          decoration: widget.decoration ??
+          decoration:
+              widget.decoration ??
               InputDecoration(
-                helperText: widget.property.help != null &&
-                        widget.property.help!.isNotEmpty
-                    ? widget.property.help
-                    : null,
-                errorStyle: Theme.of(context)
-                    .textTheme
-                    .bodyMedium!
-                    .apply(color: Theme.of(context).colorScheme.error),
+                helperText:
+                    widget.property.help != null &&
+                            widget.property.help!.isNotEmpty
+                        ? widget.property.help
+                        : null,
+                errorStyle: Theme.of(context).textTheme.bodyMedium!.apply(
+                  color: Theme.of(context).colorScheme.error,
+                ),
               ),
         ),
       ],

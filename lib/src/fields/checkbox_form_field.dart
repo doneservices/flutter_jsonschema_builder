@@ -4,25 +4,18 @@ import 'package:flutter_jsonschema_builder/src/builder/logic/widget_builder_logi
     show WidgetBuilderInherited;
 import 'package:flutter_jsonschema_builder/src/fields/fields.dart';
 import 'package:flutter_jsonschema_builder/src/fields/shared.dart';
-import '../models/models.dart';
 
 class CheckboxJFormField extends PropertyFieldWidget<bool> {
   const CheckboxJFormField({
-    Key? key,
-    required SchemaProperty property,
-    required final ValueSetter<bool?> onSaved,
-    ValueChanged<bool?>? onChanged,
-    final String? Function(dynamic)? customValidator,
-  }) : super(
-          key: key,
-          property: property,
-          onSaved: onSaved,
-          onChanged: onChanged,
-          customValidator: customValidator,
-        );
+    super.key,
+    required super.property,
+    required super.onSaved,
+    super.onChanged,
+    super.customValidator,
+  });
 
   @override
-  _CheckboxJFormFieldState createState() => _CheckboxJFormFieldState();
+  State<StatefulWidget> createState() => _CheckboxJFormFieldState();
 }
 
 class _CheckboxJFormFieldState extends State<CheckboxJFormField> {
@@ -37,7 +30,9 @@ class _CheckboxJFormFieldState extends State<CheckboxJFormField> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        FieldHeader(property: widget.property),
+        // the tile carries the title as its label — the header would
+        // otherwise show it a second time right above
+        FieldHeader(property: widget.property, showTitle: false),
         FormField<bool>(
           key: Key(widget.property.idKey),
           initialValue: widget.property.defaultValue ?? false,
@@ -63,24 +58,29 @@ class _CheckboxJFormFieldState extends State<CheckboxJFormField> {
               children: [
                 CheckboxListTile(
                   value: (field.value == null) ? false : field.value,
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
                   title: Text(
-                    widget.property.title,
-                    style: widget.property.readOnly
-                        ? Theme.of(context)
-                            .textTheme
-                            .titleMedium!
-                            .apply(color: Colors.grey)
-                        : Theme.of(context).textTheme.titleMedium,
+                    '${widget.property.title}'
+                    '${widget.property.required ? " *" : ""}',
+                    style:
+                        widget.property.readOnly
+                            ? Theme.of(
+                              context,
+                            ).textTheme.titleMedium!.apply(color: Colors.grey)
+                            : Theme.of(context).textTheme.titleMedium,
                   ),
                   controlAffinity: ListTileControlAffinity.leading,
-                  onChanged: widget.property.readOnly
-                      ? null
-                      : (bool? value) {
-                          field.didChange(value);
-                          if (widget.onChanged != null && value != null) {
-                            widget.onChanged!(value);
-                          }
-                        },
+                  onChanged:
+                      widget.property.readOnly
+                          ? null
+                          : (bool? value) {
+                            field.didChange(value);
+                            if (widget.onChanged != null && value != null) {
+                              widget.onChanged!(value);
+                            }
+                          },
                 ),
                 if (field.hasError) CustomErrorText(text: field.errorText!),
               ],
