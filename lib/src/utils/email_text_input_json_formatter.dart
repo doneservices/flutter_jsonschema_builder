@@ -6,7 +6,7 @@ class EmailTextInputJsonFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
       TextEditingValue oldValue, TextEditingValue newValue) {
-    if (oldValue.text.length >= newValue.text.length) {
+    if (newValue.text.length < oldValue.text.length) {
       return newValue;
     }
 
@@ -14,7 +14,8 @@ class EmailTextInputJsonFormatter extends TextInputFormatter {
       return oldValue;
     }
 
-    if (_atomCharacters.contains(newValue.text)) {
+    if (newValue.text.isNotEmpty &&
+        _atomCharacters.contains(newValue.text[0])) {
       return oldValue;
     }
 
