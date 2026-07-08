@@ -196,8 +196,6 @@ class PropertySchemaBuilder extends StatelessWidget {
                 updateData(context, val);
               },
               onChanged: (value) {
-                print(value);
-
                 dispatchBooleanEventToParent(
                   context,
                   schemaProperty.isMultipleFile
