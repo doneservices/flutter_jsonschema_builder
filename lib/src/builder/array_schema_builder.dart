@@ -7,11 +7,11 @@ import 'package:flutter_jsonschema_builder/src/models/models.dart';
 
 class ArraySchemaBuilder extends StatefulWidget {
   const ArraySchemaBuilder({
-    Key? key,
+    super.key,
     required this.mainSchema,
     required this.schemaArray,
     this.showDebugElements = true,
-  }) : super(key: key);
+  });
 
   final Schema mainSchema;
   final SchemaArray schemaArray;
@@ -76,7 +76,7 @@ class _ArraySchemaBuilderState extends State<ArraySchemaBuilder> {
                   const SizedBox(height: 10),
                 ],
               );
-            }).toList(),
+            }),
             if (field.hasError) CustomErrorText(text: field.errorText!),
           ],
         );

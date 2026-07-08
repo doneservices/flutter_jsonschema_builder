@@ -1,4 +1,4 @@
-library flutter_jsonschema_builder;
+library;
 
 export 'src/builder/widget_builder.dart';
 export 'src/models/property_schema.dart';

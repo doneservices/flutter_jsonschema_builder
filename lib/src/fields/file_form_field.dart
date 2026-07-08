@@ -25,7 +25,7 @@ class FileJFormField extends PropertyFieldWidget<dynamic> {
       initialFileValueHandler;
 
   @override
-  _FileJFormFieldState createState() => _FileJFormFieldState();
+  State<FileJFormField> createState() => _FileJFormFieldState();
 }
 
 class _FileJFormFieldState extends State<FileJFormField> {
