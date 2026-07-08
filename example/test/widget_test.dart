@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:example/main.dart';
@@ -12,7 +13,11 @@ void main() {
     expect(find.textContaining('First name'), findsOneWidget);
     expect(find.text('Next'), findsOneWidget);
 
-    // mode toggle is present
-    expect(find.text('Classic'), findsOneWidget);
+    // the mode toggle lives in the settings menu (bounded pumps: the
+    // looping Lottie animation would keep pumpAndSettle from settling)
+    await tester.tap(find.byIcon(Icons.tune));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('Switch to classic'), findsOneWidget);
   });
 }

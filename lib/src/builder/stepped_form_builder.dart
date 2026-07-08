@@ -8,6 +8,10 @@ import 'package:flutter_jsonschema_builder/src/builder/widget_builder.dart';
 import 'package:flutter_jsonschema_builder/src/models/models.dart';
 import 'package:flutter_jsonschema_builder/src/models/stepped_form_config.dart';
 
+/// bottom padding inside a step's scroll view so its content can scroll
+/// clear of the navigation controls floating above it
+const _kControlsClearance = 80.0;
+
 /// Renders [mainSchema] one step at a time: a progress header, a page per
 /// step (see [extractJsonFormSteps]) with optional `ui:media`, and
 /// back/next navigation gated by the current step's validators.
@@ -127,6 +131,9 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
   /// tap-to-edit), so this is where re-entrant transitions are blocked
   void _animateToPage(int page) {
     if (_isTransitioning) return;
+    // captured before the transition: the old field keeps focus while its
+    // page animates out, so the keyboard doesn't flicker mid-transition
+    final followFocus = _textInputHasFocus;
     setState(() => _currentPage = page);
     _isTransitioning = true;
     _pageController
@@ -135,7 +142,55 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
           duration: config.transitionDuration,
           curve: config.transitionCurve,
         )
-        .whenComplete(() => _isTransitioning = false);
+        .whenComplete(() {
+      _isTransitioning = false;
+      if (mounted) _syncKeyboardWithPage(page, followFocus);
+    });
+  }
+
+  /// the keyboard follows the navigation: when the user was typing, focus
+  /// moves to the first text field of the new page; when the new page has
+  /// none — or is the review page — focus drops and the keyboard dismisses
+  void _syncKeyboardWithPage(int page, bool followFocus) {
+    final target = followFocus ? _firstTextFieldOn(page) : null;
+    if (target != null) {
+      target.requestFocus();
+    } else {
+      FocusManager.instance.primaryFocus?.unfocus();
+    }
+  }
+
+  /// whether the focused widget is a text field — the signal that the
+  /// software keyboard is up (and behaves sensibly where there is none).
+  /// Text fields attach their node to a Focus widget inside EditableText,
+  /// so the text field is found above the focused context, not at it.
+  bool get _textInputHasFocus {
+    final focusContext = FocusManager.instance.primaryFocus?.context;
+    if (focusContext == null) return false;
+    return focusContext.widget is EditableText ||
+        focusContext.findAncestorWidgetOfExactType<EditableText>() != null;
+  }
+
+  /// focus node of the first text field on [page]; null for the review
+  /// page, a page without text input, or one that was never built
+  FocusNode? _firstTextFieldOn(int page) {
+    if (page >= _steps.length) return null;
+    final formContext = _formKeys[_steps[page].id]?.currentContext;
+    if (formContext == null) return null;
+
+    FocusNode? node;
+    void visit(Element element) {
+      if (node != null) return;
+      final widget = element.widget;
+      if (widget is EditableText) {
+        node = widget.focusNode;
+        return;
+      }
+      element.visitChildren(visit);
+    }
+
+    (formContext as Element).visitChildren(visit);
+    return node;
   }
 
   /// validates every step, jumping back to the first invalid one. A step
@@ -193,55 +248,67 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
                       curve: config.transitionCurve,
                     ),
             ),
+            // the controls float on top of the page content instead of
+            // stacking below it, so the page keeps the full height — which
+            // matters most when the software keyboard halves it
             Expanded(
-              child: PageView.builder(
-                controller: _pageController,
-                physics: const NeverScrollableScrollPhysics(),
-                scrollDirection: config.transitionAxis,
-                itemCount: _pageCount,
-                findChildIndexCallback: (key) {
-                  if (key is! ValueKey<String>) return null;
-                  if (key.value == _reviewPageId) return _steps.length;
-                  final index =
-                      _steps.indexWhere((step) => step.id == key.value);
-                  return index < 0 ? null : index;
-                },
-                itemBuilder: (context, index) {
-                  if (index >= _steps.length) {
-                    return _ReviewPage(
-                      key: const ValueKey<String>(_reviewPageId),
-                      steps: _steps,
-                      config: config,
-                      onEditStep: _animateToPage,
-                    );
-                  }
-                  final step = _steps[index];
-                  return _KeepAlivePage(
-                    key: ValueKey<String>(step.id),
-                    // silence animations (e.g. looping ui:media) on
-                    // kept-alive off-screen pages
-                    child: TickerMode(
-                      enabled: index == _currentPage,
-                      child: _StepPage(
-                        step: step,
-                        formKey: _formKeyFor(step),
-                        mainSchema: widget.mainSchema,
-                        config: config,
-                        showDebugElements: widget.showDebugElements,
-                        onSchemaEvent: _onObjectSchemaEvent,
-                      ),
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: PageView.builder(
+                      controller: _pageController,
+                      physics: const NeverScrollableScrollPhysics(),
+                      scrollDirection: config.transitionAxis,
+                      itemCount: _pageCount,
+                      findChildIndexCallback: (key) {
+                        if (key is! ValueKey<String>) return null;
+                        if (key.value == _reviewPageId) return _steps.length;
+                        final index =
+                            _steps.indexWhere((step) => step.id == key.value);
+                        return index < 0 ? null : index;
+                      },
+                      itemBuilder: (context, index) {
+                        if (index >= _steps.length) {
+                          return _ReviewPage(
+                            key: const ValueKey<String>(_reviewPageId),
+                            steps: _steps,
+                            config: config,
+                            onEditStep: _animateToPage,
+                          );
+                        }
+                        final step = _steps[index];
+                        return _KeepAlivePage(
+                          key: ValueKey<String>(step.id),
+                          // silence animations (e.g. looping ui:media) on
+                          // kept-alive off-screen pages
+                          child: TickerMode(
+                            enabled: index == _currentPage,
+                            child: _StepPage(
+                              step: step,
+                              formKey: _formKeyFor(step),
+                              mainSchema: widget.mainSchema,
+                              config: config,
+                              showDebugElements: widget.showDebugElements,
+                              onSchemaEvent: _onObjectSchemaEvent,
+                            ),
+                          ),
+                        );
+                      },
                     ),
-                  );
-                },
+                  ),
+                  Align(
+                    alignment: Alignment.bottomCenter,
+                    child: _StepControls(
+                      config: config,
+                      isFirstPage: _currentPage == 0,
+                      isLastPage: _currentPage >= _pageCount - 1,
+                      onBack: _goBack,
+                      onNext: _goNext,
+                      onSubmit: _trySubmit,
+                    ),
+                  ),
+                ],
               ),
-            ),
-            _StepControls(
-              config: config,
-              isFirstPage: _currentPage == 0,
-              isLastPage: _currentPage >= _pageCount - 1,
-              onBack: _goBack,
-              onNext: _goNext,
-              onSubmit: _trySubmit,
             ),
           ],
         ),
@@ -272,7 +339,7 @@ class _StepPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.only(top: 8, bottom: _kControlsClearance),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -335,7 +402,7 @@ class _ReviewPage extends StatelessWidget {
     final data = WidgetBuilderInherited.of(context).data;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.only(top: 8, bottom: _kControlsClearance),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -387,8 +454,11 @@ class _ReviewPage extends StatelessWidget {
   }
 }
 
-/// Back/next navigation row; the next button becomes the submit button on
-/// the last page, honoring [JsonFormSchemaUiConfig.submitButtonBuilder].
+/// Back/next navigation row, floating over the page content; the next
+/// button becomes the submit button on the last page, honoring
+/// [JsonFormSchemaUiConfig.submitButtonBuilder]. The defaults are buttons
+/// with their own container color so they stay legible over anything the
+/// page scrolls underneath them.
 class _StepControls extends StatelessWidget {
   const _StepControls({
     required this.config,
@@ -431,26 +501,23 @@ class _StepControls extends StatelessWidget {
             );
     }
 
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          if (!isFirstPage)
-            config.backButtonBuilder != null
-                ? config.backButtonBuilder!(onBack)
-                : TextButton.icon(
-                    onPressed: onBack,
-                    icon: Icon(isVertical
-                        ? Icons.keyboard_arrow_up
-                        : Icons.keyboard_arrow_left),
-                    label: Text(config.backButtonText),
-                  )
-          else
-            const SizedBox.shrink(),
-          nextButton,
-        ],
-      ),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        if (!isFirstPage)
+          config.backButtonBuilder != null
+              ? config.backButtonBuilder!(onBack)
+              : FilledButton.tonalIcon(
+                  onPressed: onBack,
+                  icon: Icon(isVertical
+                      ? Icons.keyboard_arrow_up
+                      : Icons.keyboard_arrow_left),
+                  label: Text(config.backButtonText),
+                )
+        else
+          const SizedBox.shrink(),
+        nextButton,
+      ],
     );
   }
 }

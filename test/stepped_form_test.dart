@@ -86,6 +86,16 @@ Widget buildTestApp(Widget child) {
 Future<void> flushTextDebounce(WidgetTester tester) =>
     tester.pump(const Duration(seconds: 1));
 
+/// the text field currently holding focus — i.e. the one the software
+/// keyboard would be attached to — or null when the keyboard is dismissed
+EditableText? focusedTextField(WidgetTester tester) {
+  for (final editable in tester.widgetList<EditableText>(
+      find.byType(EditableText, skipOffstage: false))) {
+    if (editable.focusNode.hasFocus) return editable;
+  }
+  return null;
+}
+
 void main() {
   group('extractJsonFormSteps', () {
     test(
@@ -421,6 +431,93 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(submitCount, 1);
+    });
+
+    testWidgets('navigation controls float over the page content',
+        (tester) async {
+      await tester.pumpWidget(buildTestApp(JsonForm(
+        jsonSchema: testJsonSchema,
+        displayMode: JsonFormDisplayMode.stepped,
+        onFormDataSaved: (_) {},
+      )));
+      await tester.pump();
+
+      // the Next button overlays the page area instead of stacking below
+      // it, so the page keeps the full height (crucial with a keyboard up)
+      final pageRect = tester.getRect(find.byType(PageView));
+      final nextRect =
+          tester.getRect(find.widgetWithText(ElevatedButton, 'Next'));
+      expect(nextRect.top, greaterThanOrEqualTo(pageRect.top));
+      expect(nextRect.bottom, lessThanOrEqualTo(pageRect.bottom));
+    });
+
+    testWidgets(
+        'keyboard focus follows navigation into the next text field and '
+        'drops on the review page', (tester) async {
+      await tester.pumpWidget(buildTestApp(JsonForm(
+        jsonSchema: testJsonSchema,
+        displayMode: JsonFormDisplayMode.stepped,
+        steppedConfig: const JsonFormSteppedConfig(showReviewStep: true),
+        onFormDataSaved: (_) {},
+      )));
+      await tester.pump();
+
+      // typing gives step 1's field focus, as the software keyboard would
+      await tester.enterText(find.byKey(const Key('name.first')), 'Ada');
+      await flushTextDebounce(tester);
+      expect(focusedTextField(tester), isNotNull);
+
+      // the next steps have text fields too: focus moves along
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
+      expect(
+        focusedTextField(tester),
+        tester.widget<EditableText>(find.descendant(
+            of: find.byKey(const Key('age')),
+            matching: find.byType(EditableText))),
+      );
+
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
+      expect(
+        focusedTextField(tester),
+        tester.widget<EditableText>(find.descendant(
+            of: find.byKey(const Key('bio')),
+            matching: find.byType(EditableText))),
+      );
+
+      // the review page takes no text input: the keyboard dismisses
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
+      expect(focusedTextField(tester), isNull);
+    });
+
+    testWidgets(
+        'keyboard dismisses on steps without text input and stays down '
+        'when it was not up', (tester) async {
+      await tester.pumpWidget(buildTestApp(JsonForm(
+        jsonSchema: dependencyJsonSchema,
+        displayMode: JsonFormDisplayMode.stepped,
+        onFormDataSaved: (_) {},
+      )));
+      await tester.pump();
+
+      // nothing was focused: advancing must not pop the keyboard even
+      // though the bio step has a text field
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Bio'), findsOneWidget);
+      expect(focusedTextField(tester), isNull);
+
+      // typing on bio, then going back to the dropdown step: no text
+      // input there, so focus drops and the keyboard dismisses
+      await tester.enterText(find.byKey(const Key('bio')), 'Cat person');
+      await flushTextDebounce(tester);
+      expect(focusedTextField(tester), isNotNull);
+
+      await tester.tap(find.text('Back'));
+      await tester.pumpAndSettle();
+      expect(focusedTextField(tester), isNull);
     });
 
     testWidgets('horizontal transition axis is honored', (tester) async {

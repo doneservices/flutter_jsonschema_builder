@@ -99,22 +99,33 @@ class _DemoHomePageState extends State<DemoHomePage> {
       appBar: AppBar(
         title: const Text('JSON Schema Form'),
         actions: [
-          if (isStepped)
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.tune),
-              onSelected: (value) => setState(() {
-                switch (value) {
-                  case 'axis':
-                    _transitionAxis = _transitionAxis == Axis.vertical
-                        ? Axis.horizontal
-                        : Axis.vertical;
-                    break;
-                  case 'review':
-                    _showReviewStep = !_showReviewStep;
-                    break;
-                }
-              }),
-              itemBuilder: (context) => [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.tune),
+            onSelected: (value) => setState(() {
+              switch (value) {
+                case 'mode':
+                  _displayMode = isStepped
+                      ? JsonFormDisplayMode.fullForm
+                      : JsonFormDisplayMode.stepped;
+                  break;
+                case 'axis':
+                  _transitionAxis = _transitionAxis == Axis.vertical
+                      ? Axis.horizontal
+                      : Axis.vertical;
+                  break;
+                case 'review':
+                  _showReviewStep = !_showReviewStep;
+                  break;
+              }
+            }),
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'mode',
+                child: Text(
+                  isStepped ? 'Switch to classic' : 'Switch to step by step',
+                ),
+              ),
+              if (isStepped) ...[
                 PopupMenuItem(
                   value: 'axis',
                   child: Text(
@@ -128,36 +139,11 @@ class _DemoHomePageState extends State<DemoHomePage> {
                   ),
                 ),
               ],
-            ),
-        ],
-      ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: SegmentedButton<JsonFormDisplayMode>(
-              segments: const [
-                ButtonSegment(
-                  value: JsonFormDisplayMode.stepped,
-                  label: Text('Step by step'),
-                  icon: Icon(Icons.linear_scale),
-                ),
-                ButtonSegment(
-                  value: JsonFormDisplayMode.fullForm,
-                  label: Text('Classic'),
-                  icon: Icon(Icons.list_alt),
-                ),
-              ],
-              selected: {_displayMode},
-              onSelectionChanged: (selection) =>
-                  setState(() => _displayMode = selection.first),
-            ),
-          ),
-          Expanded(
-            child: isStepped ? _buildSteppedForm() : _buildClassicForm(),
+            ],
           ),
         ],
       ),
+      body: isStepped ? _buildSteppedForm() : _buildClassicForm(),
     );
   }
 
