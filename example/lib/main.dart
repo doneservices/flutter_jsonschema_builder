@@ -97,8 +97,8 @@ const demoJsonSchema = '''
 ''';
 
 /// Ui schema showing the main keys: ui:media (bundled assets and a custom
-/// lottie type), ui:group for same-step grouping without changing the data
-/// shape, and ui:order.
+/// lottie type; rendered by the stepped mode only), ui:group for same-step
+/// grouping without changing the data shape, and ui:order.
 const demoUiSchema = '''
 {
   "ui:order": [
