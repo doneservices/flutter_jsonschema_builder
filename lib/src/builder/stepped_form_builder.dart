@@ -27,6 +27,7 @@ class SteppedFormBuilder extends StatefulWidget {
     required this.onSubmit,
     this.showDebugElements = true,
     this.padding = const EdgeInsets.all(16),
+    this.showTitle = true,
   });
 
   final SchemaObject mainSchema;
@@ -37,6 +38,9 @@ class SteppedFormBuilder extends StatefulWidget {
 
   final bool showDebugElements;
   final EdgeInsets padding;
+
+  /// whether to show the form's top-level title above the progress bar
+  final bool showTitle;
 
   @override
   State<SteppedFormBuilder> createState() => _SteppedFormBuilderState();
@@ -303,7 +307,7 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
               children: [
                 // the form's title, like classic mode's header — but smaller,
                 // since here it stays visible on every step
-                if (widget.mainSchema.title != kNoTitle)
+                if (widget.showTitle && widget.mainSchema.title != kNoTitle)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 8),
                     child: Text(
