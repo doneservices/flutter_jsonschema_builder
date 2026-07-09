@@ -104,7 +104,6 @@ class _RadioButtonJFormFieldState extends State<RadioButtonJFormField> {
                     (int i) => RadioListTile(
                           dense: true,
                           contentPadding: EdgeInsets.zero,
-                          visualDensity: VisualDensity.compact,
                           enabled: !widget.property.readOnly,
                           value: widget.property.enumm != null
                               ? widget.property.enumm![i]
