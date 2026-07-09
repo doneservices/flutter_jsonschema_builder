@@ -55,6 +55,7 @@ class JsonForm extends StatefulWidget {
     this.inputDecoration,
     this.displayMode = JsonFormDisplayMode.fullForm,
     this.steppedConfig = const JsonFormSteppedConfig(),
+    this.showTitle = true,
   });
 
   final String jsonSchema;
@@ -97,6 +98,13 @@ class JsonForm extends StatefulWidget {
   /// customization of the stepped display mode; only used when [displayMode]
   /// is [JsonFormDisplayMode.stepped]
   final JsonFormSteppedConfig steppedConfig;
+
+  /// whether to show the form's top-level title (and description) taken from
+  /// the schema.
+  ///
+  /// defaults to `true`; set to `false` to hide the form header. Applies to
+  /// both [JsonFormDisplayMode.fullForm] and [JsonFormDisplayMode.stepped].
+  final bool showTitle;
 
   @override
   State<JsonForm> createState() => _JsonFormState();
@@ -147,6 +155,7 @@ class _JsonFormState extends State<JsonForm> {
             config: widget.steppedConfig,
             showDebugElements: widget.showDebugElements,
             padding: widget.padding,
+            showTitle: widget.showTitle,
             onSubmit: () =>
                 widget.onFormDataSaved(widgetBuilderInherited.data),
           );
@@ -165,7 +174,7 @@ class _JsonFormState extends State<JsonForm> {
                     },
                     child: const Text('INSPECT'),
                   ),
-                _buildHeaderTitle(context),
+                if (widget.showTitle) _buildHeaderTitle(context),
                 FormFromSchemaBuilder(
                   mainSchema: mainSchema,
                   schema: mainSchema,

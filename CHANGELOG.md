@@ -15,6 +15,10 @@
   object-level `ui:*` keys apply to the object itself and no longer leak
   onto its child fields, and a partial `ui:order` keeps unlisted fields
   after the listed ones instead of reordering them first
+* Added `showTitle` to `JsonForm` (defaults to `true`) to show or hide the
+  form's top-level title and description in both display modes
+* In stepped mode, field titles are now bold and field titles and
+  descriptions are rendered a size larger for better readability
 * Raised the minimum requirements to Dart 3.7 / Flutter 3.29
 
 ## 0.1.3

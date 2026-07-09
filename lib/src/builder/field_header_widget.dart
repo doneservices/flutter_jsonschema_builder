@@ -13,21 +13,29 @@ class FieldHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final description = property.description;
-    // stepped mode breathes more: the header doubles as the step's heading
+    final textTheme = Theme.of(context).textTheme;
+    // stepped mode breathes more: the header doubles as the step's heading,
+    // so the title uses a heavier title style and both title and description
+    // are a size larger
     final isStepped = SteppedFormScope.maybeOf(context) != null;
+
+    final titleStyle = isStepped ? textTheme.titleSmall : textTheme.bodyMedium;
+    final descriptionStyle =
+        isStepped ? textTheme.bodyMedium : textTheme.bodySmall;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (showTitle)
           Text(
             '${property.title} ${property.required ? "*" : ""}',
-            style: Theme.of(context).textTheme.bodyMedium,
+            style: titleStyle,
           ),
         if (description != null && description.isNotEmpty) ...[
           const SizedBox(height: 4),
           Text(
             description,
-            style: Theme.of(context).textTheme.bodySmall,
+            style: descriptionStyle,
           ),
         ],
         if (isStepped) const SizedBox(height: 12),
