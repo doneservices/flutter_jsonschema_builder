@@ -141,10 +141,12 @@ class DemoHomePage extends StatefulWidget {
 /// Default file handler for every `data-url` field: opens the platform file
 /// picker and encodes the result as a data URL, matching the schema format.
 Future<List<SchemaFormFile>?> _pickFiles(SchemaProperty property) async {
-  final result = await FilePicker.pickFiles(withData: true);
-  final file = result?.files.firstOrNull;
-  final bytes = file?.bytes;
-  if (file == null || bytes == null) return null;
+  final result = await FilePicker.pickFiles(
+    withData: true,
+    allowMultiple: property.isMultipleFile,
+  );
+  final files = result?.files ?? [];
+  if (files.isEmpty) return null;
   const mimeTypes = {
     'jpg': 'image/jpeg',
     'jpeg': 'image/jpeg',
@@ -152,19 +154,22 @@ Future<List<SchemaFormFile>?> _pickFiles(SchemaProperty property) async {
     'heic': 'image/heic',
     'pdf': 'application/pdf',
   };
-  return [
-    SchemaFormFile(
-      name: file.name,
-      value:
-          Uri.dataFromBytes(
-            bytes,
-            mimeType:
-                mimeTypes[file.extension?.toLowerCase()] ??
-                'application/octet-stream',
-          ).toString(),
-      bytes: bytes,
-    ),
-  ];
+  return files
+      .where((f) => f.bytes != null)
+      .map(
+        (f) => SchemaFormFile(
+          name: f.name,
+          value:
+              Uri.dataFromBytes(
+                f.bytes!,
+                mimeType:
+                    mimeTypes[f.extension?.toLowerCase()] ??
+                    'application/octet-stream',
+              ).toString(),
+          bytes: f.bytes!,
+        ),
+      )
+      .toList();
 }
 
 class _DemoHomePageState extends State<DemoHomePage> {
