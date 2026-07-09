@@ -19,7 +19,7 @@ class FieldHeader extends StatelessWidget {
     final isStepped = SteppedFormScope.maybeOf(context) != null;
 
     final titleStyle = isStepped
-        ? textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold)
+        ? textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)
         : textTheme.bodyMedium;
     final descriptionStyle =
         isStepped ? textTheme.bodyMedium : textTheme.bodySmall;
