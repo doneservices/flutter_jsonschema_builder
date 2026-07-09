@@ -18,7 +18,7 @@ class DateJFormField extends PropertyFieldWidget<DateTime> {
   });
 
   @override
-  _DateJFormFieldState createState() => _DateJFormFieldState();
+  State<DateJFormField> createState() => _DateJFormFieldState();
 }
 
 class _DateJFormFieldState extends State<DateJFormField> {

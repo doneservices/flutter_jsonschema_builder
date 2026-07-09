@@ -7,7 +7,9 @@ class EmailTextInputJsonFormatter extends TextInputFormatter {
 
   @override
   TextEditingValue formatEditUpdate(
-      TextEditingValue oldValue, TextEditingValue newValue) {
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
     if (oldValue.text.length >= newValue.text.length) {
       return newValue;
     }
@@ -30,7 +32,9 @@ class EmailTextInputJsonFormatter extends TextInputFormatter {
     _index++;
 
     return newValue.copyWith(
-        text: newValue.text, selection: updateCursorPosition(newValue.text));
+      text: newValue.text,
+      selection: updateCursorPosition(newValue.text),
+    );
   }
 
   TextSelection updateCursorPosition(String text) {

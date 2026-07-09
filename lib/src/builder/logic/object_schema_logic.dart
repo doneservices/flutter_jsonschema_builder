@@ -9,17 +9,16 @@ class ObjectSchemaEvent {
 }
 
 class ObjectSchemaDependencyEvent extends ObjectSchemaEvent {
-  ObjectSchemaDependencyEvent({required SchemaObject schemaObject})
-      : super(schemaObject: schemaObject);
+  ObjectSchemaDependencyEvent({required super.schemaObject});
 }
 
 class ObjectSchemaInherited extends InheritedWidget {
   const ObjectSchemaInherited({
-    Key? key,
+    super.key,
     required this.schemaObject,
-    required Widget child,
+    required super.child,
     required this.listen,
-  }) : super(key: key, child: child);
+  });
 
   final SchemaObject schemaObject;
   final ValueSetter<ObjectSchemaEvent?> listen;
@@ -123,13 +122,15 @@ class ObjectSchemaInherited extends InheritedWidget {
       } else if (schemaProperty.dependents is Schema) {
         // Cuando es un Schema simple
         dev.log('case 3');
-        final _schema = schemaProperty.dependents;
+        final schema = schemaProperty.dependents;
 
         if (active) {
-          schemaObject.properties!.add(_schema);
+          schemaObject.properties!.add(schema);
         } else {
+          // match by raw id: idKey is path-qualified for nested objects and
+          // would never match, leaving the dependent field stuck in the form
           schemaObject.properties!
-              .removeWhere((element) => element.id == _schema.idKey);
+              .removeWhere((element) => element.id == schema.id);
         }
 
         schemaProperty.isDependentsActive = active;

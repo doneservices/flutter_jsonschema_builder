@@ -19,7 +19,7 @@ class DropdownOneOfJFormField extends PropertyFieldWidget<dynamic> {
   final Future<dynamic> Function(SchemaProperty)? customPickerHandler;
 
   @override
-  _SelectedFormFieldState createState() => _SelectedFormFieldState();
+  State<DropdownOneOfJFormField> createState() => _SelectedFormFieldState();
 }
 
 class _SelectedFormFieldState extends State<DropdownOneOfJFormField> {
@@ -88,7 +88,7 @@ class _SelectedFormFieldState extends State<DropdownOneOfJFormField> {
             absorbing: widget.customPickerHandler != null,
             child: DropdownButtonFormField<OneOfModel>(
               key: Key(widget.property.idKey),
-              value: valueSelected,
+              initialValue: valueSelected,
               autovalidateMode: AutovalidateMode.onUserInteraction,
               hint: Text(
                 uiConfig.selectionTitle ?? 'Select',

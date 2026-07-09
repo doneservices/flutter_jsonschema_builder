@@ -2,16 +2,14 @@ import '../models/models.dart';
 
 class SchemaObject extends Schema {
   SchemaObject({
-    required String id,
+    required super.id,
     this.required = const [],
     this.dependencies,
     String? title,
-    String? description,
+    super.description,
   }) : super(
-          id: id,
           title: title ?? 'no-title',
           type: SchemaType.object,
-          description: description,
         );
 
   factory SchemaObject.fromJson(
@@ -127,18 +125,18 @@ class SchemaObject extends Schema {
     // set UI Schema to their properties; objects and arrays only receive
     // their own nested map — passing the parent's map would copy its
     // object-level keys (ui:title, ui:order, ...) onto them
-    properties?.forEach((_property) {
-      final nestedUiSchema = uiSchema[_property.id];
+    properties?.forEach((property) {
+      final nestedUiSchema = uiSchema[property.id];
 
-      if (_property is SchemaObject) {
+      if (property is SchemaObject) {
         if (nestedUiSchema is Map<String, dynamic>) {
-          _property.setUiSchema(nestedUiSchema);
+          property.setUiSchema(nestedUiSchema);
         }
-      } else if (_property is SchemaProperty) {
-        _property.setUi(uiSchema);
-      } else if (_property is SchemaArray &&
+      } else if (property is SchemaProperty) {
+        property.setUi(uiSchema);
+      } else if (property is SchemaArray &&
           nestedUiSchema is Map<String, dynamic>) {
-        _property.setUi(nestedUiSchema);
+        property.setUi(nestedUiSchema);
       }
     });
 
@@ -168,12 +166,11 @@ class SchemaObject extends Schema {
     if (properties == null) return;
     var props = <Schema>[];
 
-    properties.forEach((key, _property) {
+    properties.forEach((key, propertyJson) {
       final isRequired = schema.required.contains(key);
-      Schema? property;
 
-      property = Schema.fromJson(
-        _property,
+      final property = Schema.fromJson(
+        propertyJson,
         id: key,
         parent: schema,
         initialData: initialData,
