@@ -15,12 +15,11 @@ class FieldHeader extends StatelessWidget {
     final description = property.description;
     final textTheme = Theme.of(context).textTheme;
     // stepped mode breathes more: the header doubles as the step's heading,
-    // so the title is bold and both title and description are a size larger
+    // so the title uses a heavier title style and both title and description
+    // are a size larger
     final isStepped = SteppedFormScope.maybeOf(context) != null;
 
-    final titleStyle = isStepped
-        ? textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)
-        : textTheme.bodyMedium;
+    final titleStyle = isStepped ? textTheme.titleSmall : textTheme.bodyMedium;
     final descriptionStyle =
         isStepped ? textTheme.bodyMedium : textTheme.bodySmall;
 
