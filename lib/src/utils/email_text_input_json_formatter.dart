@@ -1,8 +1,6 @@
 import 'package:flutter/services.dart';
 
 class EmailTextInputJsonFormatter extends TextInputFormatter {
-  var _index = 0;
-  //var _shouldDotOnce = false;
   static const String _atomCharacters = "!#\$%&'*+-/=?^_`{|}~";
 
   @override
@@ -10,51 +8,42 @@ class EmailTextInputJsonFormatter extends TextInputFormatter {
     TextEditingValue oldValue,
     TextEditingValue newValue,
   ) {
-    if (oldValue.text.length >= newValue.text.length) {
+    // Pure deletions (no characters inserted) always pass through so the user
+    // can edit freely, e.g. delete a leading character to expose a special one.
+    // Selection-replace and paste edits, even when they shrink the text, still
+    // run through validation below.
+    if (_isPureDeletion(oldValue.text, newValue.text)) {
       return newValue;
     }
 
     if (newValue.text.length >= 255) {
       return oldValue;
     }
-    if (_atomCharacters.contains(newValue.text)) {
+
+    if (newValue.text.isNotEmpty &&
+        _atomCharacters.contains(newValue.text[0])) {
       return oldValue;
     }
 
-    if (!_isAtom(newValue.text[_index])) {
-      if (newValue.text.codeUnitAt(_index) == 64) {
-        //_shouldDotOnce = true;
-        if (RegExp(r'(\@).*\1').hasMatch(newValue.text)) {
-          return oldValue;
-        }
-      }
+    if ('@'.allMatches(newValue.text).length > 1) {
+      return oldValue;
     }
-    _index++;
 
-    return newValue.copyWith(
-      text: newValue.text,
-      selection: updateCursorPosition(newValue.text),
-    );
+    return newValue;
   }
 
-  TextSelection updateCursorPosition(String text) {
-    return TextSelection.fromPosition(TextPosition(offset: text.length));
-  }
-
-  bool _isAtom(String c) {
-    return _isLetterOrDigit(c);
-  }
-
-  bool _isLetterOrDigit(String c) {
-    return _isLetter(c) || _isDigit(c);
-  }
-
-  static bool _isDigit(String c) {
-    return c.codeUnitAt(0) >= 48 && c.codeUnitAt(0) <= 57;
-  }
-
-  static bool _isLetter(String c) {
-    return (c.codeUnitAt(0) >= 65 && c.codeUnitAt(0) <= 90) ||
-        (c.codeUnitAt(0) >= 97 && c.codeUnitAt(0) <= 122);
+  /// Whether [newText] is [oldText] with a contiguous range removed and nothing
+  /// inserted — i.e. it shares a common prefix and suffix with [oldText].
+  static bool _isPureDeletion(String oldText, String newText) {
+    if (newText.length >= oldText.length) {
+      return false;
+    }
+    var prefix = 0;
+    while (prefix < newText.length && newText[prefix] == oldText[prefix]) {
+      prefix++;
+    }
+    final suffix = newText.length - prefix;
+    return newText.substring(prefix) ==
+        oldText.substring(oldText.length - suffix);
   }
 }
