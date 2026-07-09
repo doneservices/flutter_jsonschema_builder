@@ -70,8 +70,10 @@ void main() {
     });
 
     test('rejects an invalid day once the month digit is typed', () {
-      // Day "35" only fails validation at length 4, when the full day and the
-      // month tens digit are present.
+      // Typing "35" yields "35-" (the separator is appended eagerly, so the
+      // reformatted length is 3 and the length-2 day check never runs). The
+      // day is only re-validated at length 4, once the month tens digit is
+      // present — that is where "35" is finally rejected.
       final result =
           formatter.formatEditUpdate(_value('35-'), _value('35-0'));
       expect(result.text, '35-');
