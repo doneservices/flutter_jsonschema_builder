@@ -147,10 +147,15 @@ Future<List<SchemaFormFile>?> _pickFiles(SchemaProperty property) async {
   );
   final files = result?.files ?? [];
   if (files.isEmpty) return null;
+  // ponytail: covers the formats this demo realistically picks; use
+  // package:mime if an app needs full coverage
   const mimeTypes = {
     'jpg': 'image/jpeg',
     'jpeg': 'image/jpeg',
     'png': 'image/png',
+    'gif': 'image/gif',
+    'webp': 'image/webp',
+    'bmp': 'image/bmp',
     'heic': 'image/heic',
     'pdf': 'application/pdf',
   };
