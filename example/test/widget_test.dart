@@ -9,7 +9,7 @@ void main() {
     await tester.pump();
 
     // first step of the stepped demo form
-    expect(find.text('What should we call you?'), findsOneWidget);
+    expect(find.text('About you'), findsOneWidget);
     expect(find.textContaining('First name'), findsOneWidget);
     expect(find.text('Next'), findsOneWidget);
 
