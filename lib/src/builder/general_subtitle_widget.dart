@@ -3,12 +3,12 @@ import 'package:flutter_jsonschema_builder/src/models/models.dart';
 
 class GeneralSubtitle extends StatelessWidget {
   const GeneralSubtitle({
-    Key? key,
+    super.key,
     required this.title,
     this.description,
     this.mainSchemaTitle,
     this.nainSchemaDescription,
-  }) : super(key: key);
+  });
 
   final String title;
   final String? description, mainSchemaTitle, nainSchemaDescription;

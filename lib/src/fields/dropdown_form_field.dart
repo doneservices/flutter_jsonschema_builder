@@ -17,7 +17,7 @@ class DropDownJFormField extends PropertyFieldWidget<dynamic> {
 
   final Future<dynamic> Function(SchemaProperty)? customPickerHandler;
   @override
-  _DropDownJFormFieldState createState() => _DropDownJFormFieldState();
+  State<DropDownJFormField> createState() => _DropDownJFormFieldState();
 }
 
 class _DropDownJFormFieldState extends State<DropDownJFormField> {
@@ -80,7 +80,7 @@ class _DropDownJFormFieldState extends State<DropDownJFormField> {
                 return null;
               },
               items: _buildItems(),
-              value: value,
+              initialValue: value,
               onChanged: _onChanged,
               onSaved: widget.onSaved,
               style: widget.property.readOnly
@@ -127,8 +127,8 @@ class _DropDownJFormFieldState extends State<DropDownJFormField> {
       final text = widget.property.enumNames?[i] ?? value;
       w.add(
         DropdownMenuItem(
-          child: Text(text.toString()),
           value: value,
+          child: Text(text.toString()),
         ),
       );
     }

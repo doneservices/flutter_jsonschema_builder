@@ -1,274 +1,301 @@
-import 'dart:developer';
-import 'dart:typed_data';
+import 'dart:convert';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_jsonschema_builder/flutter_jsonschema_builder.dart';
+import 'package:lottie/lottie.dart';
 
 void main() {
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(primarySwatch: Colors.blue),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      title: 'flutter_jsonschema_builder demo',
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
+        useMaterial3: true,
+      ),
+      home: const DemoHomePage(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  final json = '''
- {
-  "title": "Texto",
+/// Demo schema covering the main field types and features: nested objects,
+/// enums, booleans, dates, files (single + multi) and dependencies.
+const demoJsonSchema = '''
+{
+  "title": "Field showcase",
+  "description": "The main field types and features, one of each.",
   "type": "object",
   "properties": {
-    "name" : {
-      "type" : "string",
-      "title" : "Name"
-    },
-    "files": {
-      "type": "array",
-      "title": "Multiple files",
-      "items": {
-        "type": "string",
-        "format": "data-url"
+    "name": {
+      "type": "object",
+      "title": "About you",
+      "description": "A nested object: a titled section in classic mode, a single step in stepped mode.",
+      "required": ["firstName"],
+      "properties": {
+        "firstName": {"type": "string", "title": "First name", "minLength": 2},
+        "lastName": {"type": "string", "title": "Last name"}
       }
     },
-    "select": {
-      "title" : "Select your Cola",
+    "email": {"type": "string", "format": "email", "title": "Email"},
+    "birthDate": {"type": "string", "format": "date", "title": "Birth date"},
+    "age": {"type": "integer", "title": "Age", "minimum": 0},
+    "favoriteColor": {
       "type": "string",
-      "description": "This is the select-description",
-      "enum" : [0,1,2,3,4],
-      "enumNames" : ["Vale 0","Vale 1","Vale 2","Vale 3","Vale 4"],
-      "default" : 3
+      "title": "Favorite color",
+      "description": "Enum + enumNames: radio in stepped mode, dropdown in classic",
+      "enum": ["red", "green", "blue"],
+      "enumNames": ["Red", "Green", "Blue"]
     },
-    "profession" :  {
-      "type":"string",
-      "default" : "investor",
-      "oneOf":[
-          {
-            "enum":[
-                "trader"
-            ],
-            "type":"string",
-            "title":"Trader"
-          },
-          {
-            "enum":[
-                "investor"
-            ],
-            "type":"string",
-            "title":"Inversionista"
-          },      
-          {
-            "enum":[
-                "manager_officier"
-            ],
-            "type":"string",
-            "title":"Gerente / Director(a)"
-          }
-      ],
-      "title":"Ocupación o profesión"
+    "newsletter": {
+      "type": "boolean",
+      "title": "Subscribe to the newsletter",
+      "description": "A boolean: rendered as a checkbox"
+    },
+    "pet": {
+      "type": "string",
+      "title": "Do you have a pet?",
+      "description": "Selecting cat inserts a follow-up question (dependencies)",
+      "enum": ["none", "cat"]
+    },
+    "street": {"type": "string", "title": "Street"},
+    "city": {"type": "string", "title": "City"},
+    "avatar": {
+      "type": "string",
+      "format": "data-url",
+      "title": "Avatar",
+      "description": "Single file with image preview"
+    },
+    "attachments": {
+      "type": "array",
+      "title": "Attachments",
+      "description": "Multiple files via an array of data-urls",
+      "items": {"type": "string", "format": "data-url"}
     }
-
+  },
+  "required": ["email", "favoriteColor", "newsletter", "avatar"],
+  "dependencies": {
+    "pet": {
+      "oneOf": [
+        {"properties": {"pet": {"enum": ["none"]}}},
+        {
+          "properties": {
+            "pet": {"enum": ["cat"]},
+            "petName": {"type": "string", "title": "Pet name"}
+          }
+        }
+      ]
+    }
   }
 }
-  ''';
+''';
 
-  final uiSchema = '''
-
+/// Ui schema showing the main keys: ui:media (bundled assets and a custom
+/// lottie type; rendered by the stepped mode only), ui:group for same-step
+/// grouping without changing the data shape, and ui:order.
+const demoUiSchema = '''
 {
- "gender": {
-						"ui:widget": "radio"
-					}
+  "ui:order": [
+    "name",
+    "email",
+    "birthDate",
+    "age",
+    "favoriteColor",
+    "newsletter",
+    "pet",
+    "street",
+    "city",
+    "avatar",
+    "attachments"
+  ],
+  "name": {
+    "ui:media": {"type": "asset", "src": "assets/gradient.png", "height": 120}
+  },
+  "favoriteColor": {
+    "ui:media": {"type": "lottie", "src": "assets/pulse.json", "height": 120}
+  },
+  "avatar": {
+    "ui:options": {"filePreview": true, "fileType": "image"}
+  },
+  "attachments": {
+    "ui:options": {"filePreview": true, "fileType": "image"}
+  },
+  "street": {"ui:group": "address"},
+  "city": {"ui:group": "address"}
+}
+''';
+
+class DemoHomePage extends StatefulWidget {
+  const DemoHomePage({super.key});
+
+  @override
+  State<DemoHomePage> createState() => _DemoHomePageState();
 }
 
-        ''';
+/// Default file handler for every `data-url` field: opens the platform file
+/// picker and encodes the result as a data URL, matching the schema format.
+Future<List<SchemaFormFile>?> _pickFiles(SchemaProperty property) async {
+  final result = await FilePicker.pickFiles(
+    withData: true,
+    allowMultiple: property.isMultipleFile,
+  );
+  final files = result?.files ?? [];
+  if (files.isEmpty) return null;
+  // ponytail: covers the formats this demo realistically picks; use
+  // package:mime if an app needs full coverage
+  const mimeTypes = {
+    'jpg': 'image/jpeg',
+    'jpeg': 'image/jpeg',
+    'png': 'image/png',
+    'gif': 'image/gif',
+    'webp': 'image/webp',
+    'bmp': 'image/bmp',
+    'heic': 'image/heic',
+    'pdf': 'application/pdf',
+  };
+  return files
+      .where((f) => f.bytes != null)
+      .map(
+        (f) => SchemaFormFile(
+          name: f.name,
+          value:
+              Uri.dataFromBytes(
+                f.bytes!,
+                mimeType:
+                    mimeTypes[f.extension?.toLowerCase()] ??
+                    'application/octet-stream',
+              ).toString(),
+          bytes: f.bytes!,
+        ),
+      )
+      .toList();
+}
 
-  Future<List<SchemaFormFile>?> defaultCustomFileHandler(
-    SchemaProperty property,
-  ) async {
-    await Future.delayed(const Duration(seconds: 3));
-
-    final file1 = SchemaFormFile(
-      name:
-          'https://cdn.mos.cms.futurecdn.net/LEkEkAKZQjXZkzadbHHsVj-970-80.jpg',
-      value:
-          'https://cdn.mos.cms.futurecdn.net/LEkEkAKZQjXZkzadbHHsVj-970-80.jpg',
-      bytes: Uint8List.fromList([]),
-    );
-    final file2 = SchemaFormFile(
-      name:
-          'https://cdn.mos.cms.futurecdn.net/LEkEkAKZQjXZkzadbHHsVj-970-80.jpg',
-      value:
-          'https://cdn.mos.cms.futurecdn.net/LEkEkAKZQjXZkzadbHHsVj-970-80.jpg',
-      bytes: Uint8List.fromList([]),
-    );
-    final file3 = SchemaFormFile(
-      name:
-          'https://cdn.mos.cms.futurecdn.net/LEkEkAKZQjXZkzadbHHsVj-970-80.jpg',
-      value:
-          'https://cdn.mos.cms.futurecdn.net/LEkEkAKZQjXZkzadbHHsVj-970-80.jpg',
-      bytes: Uint8List.fromList([]),
-    );
-
-    return [file1, file2, file3];
-  }
+class _DemoHomePageState extends State<DemoHomePage> {
+  JsonFormDisplayMode _displayMode = JsonFormDisplayMode.stepped;
+  Axis _transitionAxis = Axis.vertical;
+  bool _showReviewStep = true;
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(widget.title)),
-      body: SingleChildScrollView(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Material(
-              child: JsonForm(
-                jsonSchema: json,
-                uiSchema: uiSchema,
-                onFormDataSaved: (data) {
-                  inspect(data);
-                },
-                fileHandler:
-                    () => {
-                      'files': defaultCustomFileHandler,
-                      'file': (property) async {
-                        return [
-                          SchemaFormFile(
-                            name:
-                                'https://cdn.mos.cms.futurecdn.net/LEkEkAKZQjXZkzadbHHsVj-970-80.jpg',
-                            value:
-                                'https://cdn.mos.cms.futurecdn.net/LEkEkAKZQjXZkzadbHHsVj-970-80.jpg',
-                            bytes: Uint8List.fromList([]),
-                          ),
-                        ];
-                      },
-                      '*': defaultCustomFileHandler,
-                    },
-                customPickerHandler:
-                    () => {
-                      '*': (data) async {
-                        final myEnums = data.enumm ?? [];
-                        return showDialog(
-                          context: context,
-                          builder: (context) {
-                            return Scaffold(
-                              body: Container(
-                                margin: const EdgeInsets.all(20),
-                                child: Column(
-                                  children: [
-                                    const Text('My Custom Picker'),
-                                    ListView.builder(
-                                      shrinkWrap: true,
-                                      itemCount: myEnums.length,
-                                      itemBuilder: (context, index) {
-                                        return ListTile(
-                                          title: Text(
-                                            data.enumNames!
-                                                .toList()[index]
-                                                .toString(),
-                                          ),
-                                          onTap:
-                                              () => Navigator.pop(
-                                                context,
-                                                myEnums.toList()[index],
-                                              ),
-                                        );
-                                      },
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        );
-                      },
-                    },
-                jsonFormSchemaUiConfig: JsonFormSchemaUiConfig(
-                  submitButtonBuilder:
-                      (onSubmit) => TextButton.icon(
-                        onPressed: onSubmit,
-                        icon: const Icon(Icons.heart_broken),
-                        label: const Text('Enviar'),
-                      ),
-                  addItemBuilder:
-                      (onPressed, key) => TextButton.icon(
-                        onPressed: onPressed,
-                        icon: const Icon(Icons.plus_one),
-                        label: const Text('Add Item'),
-                      ),
-                  addFileButtonBuilder: (onPressed, property) {
-                    final key = property.idKey;
-                    if (['file', 'file3'].contains(key)) {
-                      return OutlinedButton(
-                        onPressed: onPressed,
-                        child: Text('+ Agregar archivo $key'),
-                        style: ButtonStyle(
-                          minimumSize: WidgetStateProperty.all(
-                            const Size(double.infinity, 40),
-                          ),
-                          backgroundColor: WidgetStateProperty.all(
-                            const Color(0xffcee5ff),
-                          ),
-                          side: WidgetStateProperty.all(
-                            const BorderSide(color: Color(0xffafd5ff)),
-                          ),
-                          textStyle: WidgetStateProperty.all(
-                            const TextStyle(color: Color(0xff057afb)),
-                          ),
-                        ),
-                      );
-                    }
+    final isStepped = _displayMode == JsonFormDisplayMode.stepped;
 
-                    return null;
-                  },
-                  inputDecoration: InputDecoration(
-                    // labelText: 'Custom Input Decoration',
-                    // labelStyle: TextStyle(color: Colors.blue),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide(color: Colors.blue),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('JSON Schema Form'),
+        actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.tune),
+            onSelected:
+                (value) => setState(() {
+                  switch (value) {
+                    case 'mode':
+                      _displayMode =
+                          isStepped
+                              ? JsonFormDisplayMode.fullForm
+                              : JsonFormDisplayMode.stepped;
+                      break;
+                    case 'axis':
+                      _transitionAxis =
+                          _transitionAxis == Axis.vertical
+                              ? Axis.horizontal
+                              : Axis.vertical;
+                      break;
+                    case 'review':
+                      _showReviewStep = !_showReviewStep;
+                      break;
+                  }
+                }),
+            itemBuilder:
+                (context) => [
+                  PopupMenuItem(
+                    value: 'mode',
+                    child: Text(
+                      isStepped
+                          ? 'Switch to classic'
+                          : 'Switch to step by step',
                     ),
-                    fillColor: Colors.blue,
-                    filled: true,
                   ),
-                ),
-                customValidatorHandler:
-                    () => {
-                      'files': (value) {
-                        return null;
-                      },
-                    },
-              ),
-            ),
-          ],
-        ),
+                  if (isStepped) ...[
+                    PopupMenuItem(
+                      value: 'axis',
+                      child: Text(
+                        'Transition: ${_transitionAxis == Axis.vertical ? 'vertical' : 'horizontal'}',
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'review',
+                      child: Text(
+                        'Review step: ${_showReviewStep ? 'on' : 'off'}',
+                      ),
+                    ),
+                  ],
+                ],
+          ),
+        ],
       ),
+      body: isStepped ? _buildSteppedForm() : _buildClassicForm(),
+    );
+  }
+
+  Widget _buildSteppedForm() {
+    // Key forces a fresh form when the knobs change, so toggles apply cleanly.
+    return JsonForm(
+      key: ValueKey('stepped-$_transitionAxis-$_showReviewStep'),
+      jsonSchema: demoJsonSchema,
+      uiSchema: demoUiSchema,
+      showDebugElements: false,
+      fileHandler: () => {'*': _pickFiles},
+      displayMode: JsonFormDisplayMode.stepped,
+      steppedConfig: JsonFormSteppedConfig(
+        transitionAxis: _transitionAxis,
+        showReviewStep: _showReviewStep,
+        reviewDescription: 'Tap an answer to change it.',
+        mediaBuilder: (context, media) {
+          if (media.type == 'lottie') {
+            return Lottie.asset(media.src, height: media.height ?? 160);
+          }
+          return null;
+        },
+      ),
+      onFormDataSaved: _showResult,
+    );
+  }
+
+  Widget _buildClassicForm() {
+    return SingleChildScrollView(
+      child: JsonForm(
+        jsonSchema: demoJsonSchema,
+        uiSchema: demoUiSchema,
+        showDebugElements: false,
+        fileHandler: () => {'*': _pickFiles},
+        onFormDataSaved: _showResult,
+      ),
+    );
+  }
+
+  void _showResult(dynamic data) {
+    showDialog<void>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Form data'),
+            content: SingleChildScrollView(
+              child: Text(const JsonEncoder.withIndent('  ').convert(data)),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Close'),
+              ),
+            ],
+          ),
     );
   }
 }

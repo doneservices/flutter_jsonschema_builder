@@ -17,7 +17,7 @@ class RadioButtonJFormField extends PropertyFieldWidget<dynamic> {
   });
 
   @override
-  _RadioButtonJFormFieldState createState() => _RadioButtonJFormFieldState();
+  State<RadioButtonJFormField> createState() => _RadioButtonJFormFieldState();
 }
 
 class _RadioButtonJFormFieldState extends State<RadioButtonJFormField> {
@@ -84,35 +84,42 @@ class _RadioButtonJFormFieldState extends State<RadioButtonJFormField> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             FieldHeader(property: widget.property),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: List<Widget>.generate(
-                  widget.property.enumNames?.length ?? 0,
-                  (int i) => RadioListTile(
-                        value: widget.property.enumm != null
-                            ? widget.property.enumm![i]
-                            : i,
-                        title: Text(widget.property.enumNames?[i],
-                            style: widget.property.readOnly
-                                ? Theme.of(context)
-                                    .textTheme
-                                    .titleMedium!
-                                    .apply(color: Colors.grey)
-                                : Theme.of(context).textTheme.titleMedium),
-                        groupValue: groupValue,
-                        onChanged: widget.property.readOnly
-                            ? null
-                            : (dynamic value) {
-                                print(value);
-                                groupValue = value;
-                                if (value != null) {
-                                  field.didChange(groupValue);
-                                  if (widget.onChanged != null) {
-                                    widget.onChanged!(groupValue!);
-                                  }
-                                }
-                              },
-                      )),
+            RadioGroup<dynamic>(
+              groupValue: groupValue,
+              onChanged: (dynamic value) {
+                groupValue = value;
+                if (value != null) {
+                  field.didChange(groupValue);
+                  if (widget.onChanged != null) {
+                    widget.onChanged!(groupValue!);
+                  }
+                }
+              },
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: List<Widget>.generate(
+                    widget.property.enumNames?.length ??
+                        widget.property.enumm?.length ??
+                        0,
+                    (int i) => RadioListTile(
+                          dense: true,
+                          contentPadding: EdgeInsets.zero,
+                          visualDensity: VisualDensity.compact,
+                          enabled: !widget.property.readOnly,
+                          value: widget.property.enumm != null
+                              ? widget.property.enumm![i]
+                              : i,
+                          title: Text(
+                              widget.property.enumNames?[i] ??
+                                  widget.property.enumm![i].toString(),
+                              style: widget.property.readOnly
+                                  ? Theme.of(context)
+                                      .textTheme
+                                      .titleMedium!
+                                      .apply(color: Colors.grey)
+                                  : Theme.of(context).textTheme.titleMedium),
+                        )),
+              ),
             ),
             if (field.hasError) CustomErrorText(text: field.errorText!),
           ],

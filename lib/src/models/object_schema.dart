@@ -2,16 +2,14 @@ import '../models/models.dart';
 
 class SchemaObject extends Schema {
   SchemaObject({
-    required String id,
+    required super.id,
     this.required = const [],
     this.dependencies,
     String? title,
-    String? description,
+    super.description,
   }) : super(
-          id: id,
           title: title ?? 'no-title',
           type: SchemaType.object,
-          description: description,
         );
 
   factory SchemaObject.fromJson(
@@ -55,6 +53,11 @@ class SchemaObject extends Schema {
         case "ui:description":
           description = data as String;
           break;
+        case "ui:media":
+          if (data is Map) {
+            uiMedia = JsonFormMedia.fromJson(Map<String, dynamic>.from(data));
+          }
+          break;
         default:
           break;
       }
@@ -78,7 +81,8 @@ class SchemaObject extends Schema {
       ..dependencies = dependencies
       ..oneOf = oneOf
       ..order = order
-      ..required = required;
+      ..required = required
+      ..uiMedia = uiMedia;
 
     final otherProperties = properties!; //.map((p) => p.copyWith(id: p.id));
 
@@ -118,20 +122,39 @@ class SchemaObject extends Schema {
     // set UI Schema to this ObjectSchema
     setUi(uiSchema);
 
-    // set UI Schema to their properties
-    properties?.forEach((_property) {
-      if (_property is SchemaObject) {
-        _property.setUi(uiSchema);
-      } else if (_property is SchemaProperty) {
-        _property.setUi(uiSchema);
+    // set UI Schema to their properties; objects and arrays only receive
+    // their own nested map — passing the parent's map would copy its
+    // object-level keys (ui:title, ui:order, ...) onto them
+    properties?.forEach((property) {
+      final nestedUiSchema = uiSchema[property.id];
+
+      if (property is SchemaObject) {
+        if (nestedUiSchema is Map<String, dynamic>) {
+          property.setUiSchema(nestedUiSchema);
+        }
+      } else if (property is SchemaProperty) {
+        property.setUi(uiSchema);
+      } else if (property is SchemaArray &&
+          nestedUiSchema is Map<String, dynamic>) {
+        property.setUi(nestedUiSchema);
       }
     });
 
-    // order logic
+    // order logic; ids missing from ui:order keep schema order, after the
+    // listed ones. List.sort is not guaranteed stable, so tie-break on the
+    // original position
     if (order != null) {
-      properties!.sort((a, b) {
-        return order!.indexOf(a.id) - order!.indexOf(b.id);
-      });
+      int orderIndex(Schema schema) {
+        final index = order!.indexOf(schema.id);
+        return index == -1 ? order!.length : index;
+      }
+
+      final indexed = properties!.asMap().entries.toList()
+        ..sort((a, b) {
+          final byOrder = orderIndex(a.value) - orderIndex(b.value);
+          return byOrder != 0 ? byOrder : a.key - b.key;
+        });
+      properties = [for (final entry in indexed) entry.value];
     }
   }
 
@@ -143,12 +166,11 @@ class SchemaObject extends Schema {
     if (properties == null) return;
     var props = <Schema>[];
 
-    properties.forEach((key, _property) {
+    properties.forEach((key, propertyJson) {
       final isRequired = schema.required.contains(key);
-      Schema? property;
 
-      property = Schema.fromJson(
-        _property,
+      final property = Schema.fromJson(
+        propertyJson,
         id: key,
         parent: schema,
         initialData: initialData,

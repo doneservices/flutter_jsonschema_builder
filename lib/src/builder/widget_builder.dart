@@ -9,9 +9,21 @@ import 'package:flutter_jsonschema_builder/src/builder/array_schema_builder.dart
 import 'package:flutter_jsonschema_builder/src/builder/logic/widget_builder_logic.dart';
 import 'package:flutter_jsonschema_builder/src/builder/object_schema_builder.dart';
 import 'package:flutter_jsonschema_builder/src/builder/property_schema_builder.dart';
+import 'package:flutter_jsonschema_builder/src/builder/stepped_form_builder.dart';
 import 'package:flutter_jsonschema_builder/src/models/json_form_schema_style.dart';
+import 'package:flutter_jsonschema_builder/src/models/stepped_form_config.dart';
 
 import '../models/models.dart';
+
+/// How [JsonForm] lays out the schema.
+enum JsonFormDisplayMode {
+  /// all fields on a single scrolling page with a submit button at the end
+  fullForm,
+
+  /// one step at a time with progress, back/next navigation and optional
+  /// `ui:media` per step; see [JsonFormSteppedConfig]
+  stepped,
+}
 
 typedef FileHandler = Map<String,
         Future<List<SchemaFormFile>?> Function(SchemaProperty property)?>
@@ -41,6 +53,8 @@ class JsonForm extends StatefulWidget {
     this.initialData,
     this.padding = const EdgeInsets.all(16),
     this.inputDecoration,
+    this.displayMode = JsonFormDisplayMode.fullForm,
+    this.steppedConfig = const JsonFormSteppedConfig(),
   });
 
   final String jsonSchema;
@@ -73,8 +87,19 @@ class JsonForm extends StatefulWidget {
 
   final InputDecoration? inputDecoration;
 
+  /// [JsonFormDisplayMode.fullForm] renders every field on one page,
+  /// [JsonFormDisplayMode.stepped] walks through the form one step at a time.
+  ///
+  /// Note: the stepped mode expands to fill its parent and needs a bounded
+  /// height; don't place it inside an unconstrained scroll view.
+  final JsonFormDisplayMode displayMode;
+
+  /// customization of the stepped display mode; only used when [displayMode]
+  /// is [JsonFormDisplayMode.stepped]
+  final JsonFormSteppedConfig steppedConfig;
+
   @override
-  _JsonFormState createState() => _JsonFormState();
+  State<JsonForm> createState() => _JsonFormState();
 }
 
 class _JsonFormState extends State<JsonForm> {
@@ -82,10 +107,17 @@ class _JsonFormState extends State<JsonForm> {
 
   final _formKey = GlobalKey<FormState>();
 
+  /// owned by the state so entered data survives rebuilds of this widget —
+  /// WidgetBuilderInherited is recreated on every build and must keep
+  /// receiving the same map instance. A copy of [JsonForm.initialData], so
+  /// saving fields never mutates the caller's map
+  late final Map<String, dynamic> _formData;
+
   _JsonFormState();
 
   @override
   void initState() {
+    _formData = Map<String, dynamic>.from(widget.initialData ?? {});
     mainSchema = (Schema.fromJson(json.decode(widget.jsonSchema),
         id: kGenesisIdKey, initialData: widget.initialData) as SchemaObject)
       ..setUiSchema(
@@ -103,10 +135,22 @@ class _JsonFormState extends State<JsonForm> {
       customPickerHandler: widget.customPickerHandler,
       customValidatorHandler: widget.customValidatorHandler,
       onChanged: widget.onChanged,
-      initialData: widget.initialData,
+      initialData: _formData,
       inputDecoration: widget.inputDecoration,
+      displayMode: widget.displayMode,
       child: Builder(builder: (context) {
         final widgetBuilderInherited = WidgetBuilderInherited.of(context);
+
+        if (widget.displayMode == JsonFormDisplayMode.stepped) {
+          return SteppedFormBuilder(
+            mainSchema: mainSchema,
+            config: widget.steppedConfig,
+            showDebugElements: widget.showDebugElements,
+            padding: widget.padding,
+            onSubmit: () =>
+                widget.onFormDataSaved(widgetBuilderInherited.data),
+          );
+        }
 
         return Form(
           key: _formKey,
@@ -185,12 +229,12 @@ class _JsonFormState extends State<JsonForm> {
 
 class FormFromSchemaBuilder extends StatelessWidget {
   const FormFromSchemaBuilder({
-    Key? key,
+    super.key,
     required this.mainSchema,
     required this.schema,
     this.showDebugElements = true,
     this.schemaObject,
-  }) : super(key: key);
+  });
   final Schema mainSchema;
   final Schema schema;
   final bool showDebugElements;
