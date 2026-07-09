@@ -186,6 +186,27 @@ produces two steps — "What should we call you?" with both name fields, then
 email — and the submitted data mirrors the schema:
 `{"name": {"first": ..., "last": ...}, "email": ...}`.
 
+#### Grouping flat fields onto one step
+
+Wrapping fields in a nested object also nests the submitted data. When you want
+several top-level fields on the same step but a **flat** data shape, give them a
+shared `ui:group` value in the ui schema:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "first": {"type": "string", "title": "First name", "ui:group": "name"},
+    "last": {"type": "string", "title": "Last name", "ui:group": "name"},
+    "email": {"type": "string", "title": "Email", "format": "email"}
+  }
+}
+```
+
+`first` and `last` share one step (placed where the first group member appears),
+while the data stays flat: `{"first": ..., "last": ..., "email": ...}`. The
+group's step takes its `ui:media` from the first member that declares one.
+
 #### Step media: images and Lottie animations
 
 Each step can show an image or an animation above its fields, declared in the
