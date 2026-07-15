@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_jsonschema_builder/flutter_jsonschema_builder.dart';
+import 'package:flutter_jsonschema_builder/src/models/conditional_schema.dart';
 import 'package:flutter_jsonschema_builder/src/models/models.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -120,6 +121,30 @@ void main() {
       'age',
       'adultName',
     ]);
+  });
+
+  test('numeric constraints preserve exact string const matches', () {
+    expect(jsonSchemaMatches({'const': '1', 'minimum': 0}, '1'), isTrue);
+  });
+
+  test('an object can contain only conditional properties', () {
+    final schema =
+        Schema.fromJson(
+              json.decode('''
+      {
+        "type": "object",
+        "if": {},
+        "then": {
+          "properties": {"conditional": {"type": "string"}}
+        }
+      }
+      '''),
+              id: kGenesisIdKey,
+            )
+            as SchemaObject;
+
+    schema.resolveConditions({});
+    expect(schema.properties!.single.id, 'conditional');
   });
 
   testWidgets('classic mode adds, validates, and removes a conditional field', (

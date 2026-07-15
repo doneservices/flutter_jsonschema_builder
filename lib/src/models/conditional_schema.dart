@@ -5,7 +5,13 @@ bool jsonSchemaMatches(dynamic schema, dynamic data) {
   // Number fields currently store their text input in formData. Coerce only
   // when the condition itself is numeric, preserving ordinary string rules.
   if (data is String && _usesNumericComparison(schema)) {
-    data = num.tryParse(data.replaceAll(',', '.')) ?? data;
+    final values = schema['enum'];
+    final hasExactMatch =
+        (schema.containsKey('const') && _jsonEquals(data, schema['const'])) ||
+        (values is List && values.any((value) => _jsonEquals(data, value)));
+    if (!hasExactMatch) {
+      data = num.tryParse(data.replaceAll(',', '.')) ?? data;
+    }
   }
 
   if (schema.containsKey('const') && !_jsonEquals(data, schema['const'])) {

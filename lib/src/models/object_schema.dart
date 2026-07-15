@@ -215,7 +215,8 @@ class SchemaObject extends Schema {
           }
         }
 
-        properties?.addAll(_conditionalProperties);
+        properties ??= <Schema>[];
+        properties!.addAll(_conditionalProperties);
         if (_uiSchema != null) setUiSchema(_uiSchema);
         final dependencyRequired = <String>{
           for (final property
