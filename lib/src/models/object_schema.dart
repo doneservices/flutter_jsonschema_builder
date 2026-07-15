@@ -247,7 +247,9 @@ class SchemaObject extends Schema {
             final original = properties![index];
             if (property is SchemaProperty && original is SchemaProperty) {
               property.isDependentsActive = original.isDependentsActive;
-            } else if (property is SchemaArray && original is SchemaArray) {
+            } else if (property is SchemaArray &&
+                original is SchemaArray &&
+                !entry.value.containsKey('items')) {
               property.items = original.items;
             }
             _conditionalOverrides[entry.key] = original;

@@ -150,7 +150,8 @@ void main() {
         },
         "then": {
           "properties": {
-            "code": {"title": "Conditional code", "pattern": "^A"}
+            "code": {"title": "Conditional code", "pattern": "^A"},
+            "items": {"items": {"type": "number"}}
           },
           "required": ["items"]
         }
@@ -160,17 +161,26 @@ void main() {
             )
             as SchemaObject;
 
+    final baseItems = schema.properties![2] as SchemaArray;
+    baseItems.items = [SchemaProperty(id: '0', type: SchemaType.string)];
+
     schema.resolveConditions({'enabled': true});
     final conditionalCode = schema.properties![1] as SchemaProperty;
+    final conditionalItems = schema.properties![2] as SchemaArray;
     expect(conditionalCode.title, 'Conditional code');
     expect(conditionalCode.pattern, '^A');
-    expect((schema.properties![2] as SchemaArray).required, isTrue);
+    expect(conditionalItems.required, isTrue);
+    expect(conditionalItems.items, isEmpty);
+    expect(conditionalItems.itemsBaseSchema['type'], 'number');
 
     schema.resolveConditions({'enabled': false});
     final baseCode = schema.properties![1] as SchemaProperty;
+    final restoredItems = schema.properties![2] as SchemaArray;
     expect(baseCode.title, 'Base code');
     expect(baseCode.pattern, isNull);
-    expect((schema.properties![2] as SchemaArray).required, isFalse);
+    expect(restoredItems.required, isFalse);
+    expect(restoredItems.items, hasLength(1));
+    expect(restoredItems.itemsBaseSchema['type'], 'string');
   });
 
   test('an object can contain only conditional properties', () {
