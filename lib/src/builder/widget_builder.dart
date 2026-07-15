@@ -25,17 +25,20 @@ enum JsonFormDisplayMode {
   stepped,
 }
 
-typedef FileHandler = Map<String,
-        Future<List<SchemaFormFile>?> Function(SchemaProperty property)?>
+typedef FileHandler =
+    Map<
+      String,
+      Future<List<SchemaFormFile>?> Function(SchemaProperty property)?
+    >
     Function();
-typedef InitialFileValueHandler
-    = Map<String, Future<List<SchemaFormFile>?> Function(dynamic defaultValue)?>
-        Function();
-typedef CustomPickerHandler
-    = Map<String, Future<dynamic> Function(SchemaProperty data)> Function();
+typedef InitialFileValueHandler =
+    Map<String, Future<List<SchemaFormFile>?> Function(dynamic defaultValue)?>
+    Function();
+typedef CustomPickerHandler =
+    Map<String, Future<dynamic> Function(SchemaProperty data)> Function();
 
-typedef CustomValidatorHandler = Map<String, String? Function(dynamic)?>
-    Function();
+typedef CustomValidatorHandler =
+    Map<String, String? Function(dynamic)?> Function();
 
 class JsonForm extends StatefulWidget {
   const JsonForm({
@@ -126,10 +129,17 @@ class _JsonFormState extends State<JsonForm> {
   @override
   void initState() {
     _formData = Map<String, dynamic>.from(widget.initialData ?? {});
-    mainSchema = (Schema.fromJson(json.decode(widget.jsonSchema),
-        id: kGenesisIdKey, initialData: widget.initialData) as SchemaObject)
-      ..setUiSchema(
-          widget.uiSchema != null ? json.decode(widget.uiSchema!) : null);
+    mainSchema =
+        (Schema.fromJson(
+                json.decode(widget.jsonSchema),
+                id: kGenesisIdKey,
+                initialData: widget.initialData,
+              )
+              as SchemaObject)
+          ..setUiSchema(
+            widget.uiSchema != null ? json.decode(widget.uiSchema!) : null,
+          );
+    mainSchema.resolveConditions(_formData);
 
     super.initState();
   }
@@ -146,53 +156,56 @@ class _JsonFormState extends State<JsonForm> {
       initialData: _formData,
       inputDecoration: widget.inputDecoration,
       displayMode: widget.displayMode,
-      child: Builder(builder: (context) {
-        final widgetBuilderInherited = WidgetBuilderInherited.of(context);
+      child: Builder(
+        builder: (context) {
+          final widgetBuilderInherited = WidgetBuilderInherited.of(context);
 
-        if (widget.displayMode == JsonFormDisplayMode.stepped) {
-          return SteppedFormBuilder(
-            mainSchema: mainSchema,
-            config: widget.steppedConfig,
-            showDebugElements: widget.showDebugElements,
-            padding: widget.padding,
-            showTitle: widget.showTitle,
-            onSubmit: () =>
-                widget.onFormDataSaved(widgetBuilderInherited.data),
-          );
-        }
+          if (widget.displayMode == JsonFormDisplayMode.stepped) {
+            return SteppedFormBuilder(
+              mainSchema: mainSchema,
+              config: widget.steppedConfig,
+              showDebugElements: widget.showDebugElements,
+              padding: widget.padding,
+              showTitle: widget.showTitle,
+              onSubmit: () =>
+                  widget.onFormDataSaved(widgetBuilderInherited.data),
+            );
+          }
 
-        return Form(
-          key: _formKey,
-          child: Container(
-            padding: widget.padding,
-            child: Column(
-              children: <Widget>[
-                if (!kReleaseMode && widget.showDebugElements)
-                  TextButton(
-                    onPressed: () {
-                      inspect(mainSchema);
-                    },
-                    child: const Text('INSPECT'),
+          return Form(
+            key: _formKey,
+            child: Container(
+              padding: widget.padding,
+              child: Column(
+                children: <Widget>[
+                  if (!kReleaseMode && widget.showDebugElements)
+                    TextButton(
+                      onPressed: () {
+                        inspect(mainSchema);
+                      },
+                      child: const Text('INSPECT'),
+                    ),
+                  if (widget.showTitle) _buildHeaderTitle(context),
+                  FormFromSchemaBuilder(
+                    mainSchema: mainSchema,
+                    schema: mainSchema,
+                    showDebugElements: widget.showDebugElements,
                   ),
-                if (widget.showTitle) _buildHeaderTitle(context),
-                FormFromSchemaBuilder(
-                  mainSchema: mainSchema,
-                  schema: mainSchema,
-                  showDebugElements: widget.showDebugElements,
-                ),
-                const SizedBox(height: 20),
-                widgetBuilderInherited.uiConfig.submitButtonBuilder == null
-                    ? ElevatedButton(
-                        onPressed: () => onSubmit(widgetBuilderInherited),
-                        child: const Text('Submit'),
-                      )
-                    : widgetBuilderInherited.uiConfig.submitButtonBuilder!(
-                        () => onSubmit(widgetBuilderInherited)),
-              ],
+                  const SizedBox(height: 20),
+                  widgetBuilderInherited.uiConfig.submitButtonBuilder == null
+                      ? ElevatedButton(
+                          onPressed: () => onSubmit(widgetBuilderInherited),
+                          child: const Text('Submit'),
+                        )
+                      : widgetBuilderInherited.uiConfig.submitButtonBuilder!(
+                          () => onSubmit(widgetBuilderInherited),
+                        ),
+                ],
+              ),
             ),
-          ),
-        );
-      }),
+          );
+        },
+      ),
     )..setJsonFormSchemaStyle(context, widget.jsonFormSchemaUiConfig);
   }
 

@@ -31,11 +31,13 @@ class _ObjectSchemaBuilderState extends State<ObjectSchemaBuilder> {
 
   @override
   Widget build(BuildContext context) {
+    final parentScope = ObjectSchemaInherited.maybeOf(context);
     return ObjectSchemaInherited(
       schemaObject: _schemaObject,
       listen: (value) {
         if (value is ObjectSchemaDependencyEvent) {
-          setState(() => _schemaObject = value.schemaObject);
+          setState(() {});
+          parentScope?.listen(value);
         }
       },
       child: Column(

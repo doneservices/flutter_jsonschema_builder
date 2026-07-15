@@ -117,6 +117,39 @@ final uiSchema = '''
 ```
 <img width="348" alt="image" src="https://user-images.githubusercontent.com/58694638/187996261-ab3be73d-35e0-40c5-a0de-47900b64f1be.png">
 
+### Conditional fields
+
+Conditional fields use the same JSON Schema annotations as RJSF. Put
+`if`/`then`/`else` directly on an object, or wrap rules in `allOf`. Active
+branches can add properties and make them required; classic and stepped modes
+update automatically.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "pet": {"type": "string", "enum": ["none", "cat"]}
+  },
+  "allOf": [{
+    "if": {
+      "required": ["pet"],
+      "properties": {"pet": {"const": "cat"}}
+    },
+    "then": {
+      "properties": {
+        "petName": {"type": "string", "title": "Pet name"}
+      },
+      "required": ["petName"]
+    }
+  }]
+}
+```
+
+Conditions support the common JSON Schema predicates `const`, `enum`,
+`required`, nested `properties`, `type`, `not`, `allOf`, `anyOf`, `oneOf`,
+string length/pattern, and numeric bounds. The earlier RJSF-compatible
+`dependencies` syntax remains supported.
+
 
 ### Stepped display mode
 
@@ -350,4 +383,3 @@ customValidatorHandler: () => {
 - [ ] OnChanged
 - [ ] References
 - [ ] pub.dev
-

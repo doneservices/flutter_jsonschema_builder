@@ -2,6 +2,8 @@
 
 ## 0.2.0
 
+* Added RJSF-compatible conditional fields using JSON Schema
+  `if`/`then`/`else`, directly or inside `allOf`, in both display modes
 * Added `JsonFormDisplayMode.stepped`: a step-by-step display mode with
   progress bar, per-step validation, vertical/horizontal transitions and an
   optional review step (`JsonFormSteppedConfig`)
