@@ -91,7 +91,13 @@ bool jsonSchemaMatches(dynamic schema, dynamic data) {
 }
 
 bool _usesNumericComparison(Map schema) {
-  if (schema['type'] == 'number' || schema['type'] == 'integer') return true;
+  final type = schema['type'];
+  if (type == 'number' ||
+      type == 'integer' ||
+      (type is List &&
+          type.any((item) => item == 'number' || item == 'integer'))) {
+    return true;
+  }
   if (schema['const'] is num) return true;
   if (schema['enum'] is List && (schema['enum'] as List).any((v) => v is num)) {
     return true;

@@ -125,6 +125,52 @@ void main() {
 
   test('numeric constraints preserve exact string const matches', () {
     expect(jsonSchemaMatches({'const': '1', 'minimum': 0}, '1'), isTrue);
+    expect(
+      jsonSchemaMatches({
+        'type': ['number', 'null'],
+      }, '1'),
+      isTrue,
+    );
+  });
+
+  test('conditional branches merge and restore existing field schemas', () {
+    final schema =
+        Schema.fromJson(
+              json.decode('''
+      {
+        "type": "object",
+        "properties": {
+          "enabled": {"type": "boolean"},
+          "code": {"type": "string", "title": "Base code"},
+          "items": {"type": "array", "items": {"type": "string"}}
+        },
+        "if": {
+          "required": ["enabled"],
+          "properties": {"enabled": {"const": true}}
+        },
+        "then": {
+          "properties": {
+            "code": {"title": "Conditional code", "pattern": "^A"}
+          },
+          "required": ["items"]
+        }
+      }
+      '''),
+              id: kGenesisIdKey,
+            )
+            as SchemaObject;
+
+    schema.resolveConditions({'enabled': true});
+    final conditionalCode = schema.properties![1] as SchemaProperty;
+    expect(conditionalCode.title, 'Conditional code');
+    expect(conditionalCode.pattern, '^A');
+    expect((schema.properties![2] as SchemaArray).required, isTrue);
+
+    schema.resolveConditions({'enabled': false});
+    final baseCode = schema.properties![1] as SchemaProperty;
+    expect(baseCode.title, 'Base code');
+    expect(baseCode.pattern, isNull);
+    expect((schema.properties![2] as SchemaArray).required, isFalse);
   });
 
   test('an object can contain only conditional properties', () {
