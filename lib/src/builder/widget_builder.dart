@@ -102,11 +102,11 @@ class JsonForm extends StatefulWidget {
   /// is [JsonFormDisplayMode.stepped]
   final JsonFormSteppedConfig steppedConfig;
 
-  /// whether to show the form's top-level title (and description) taken from
-  /// the schema.
+  /// whether to show the form's top-level header taken from the schema.
   ///
-  /// defaults to `true`; set to `false` to hide the form header. Applies to
-  /// both [JsonFormDisplayMode.fullForm] and [JsonFormDisplayMode.stepped].
+  /// In full-form mode, the header includes the title and description. In
+  /// stepped mode, it includes the title above the progress bar. Defaults to
+  /// `true`; set to `false` to hide the form header.
   final bool showTitle;
 
   @override
