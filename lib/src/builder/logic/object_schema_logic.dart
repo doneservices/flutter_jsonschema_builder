@@ -24,8 +24,8 @@ class ObjectSchemaInherited extends InheritedWidget {
   final ValueSetter<ObjectSchemaEvent?> listen;
 
   static ObjectSchemaInherited of(BuildContext context) {
-    final ObjectSchemaInherited? result = context
-        .dependOnInheritedWidgetOfExactType<ObjectSchemaInherited>();
+    final ObjectSchemaInherited? result =
+        context.dependOnInheritedWidgetOfExactType<ObjectSchemaInherited>();
     assert(result != null, 'No WidgetBuilderInherited found in context');
     return result!;
   }
@@ -40,13 +40,8 @@ class ObjectSchemaInherited extends InheritedWidget {
   }
 
   /// esta funcion comunica
-  void listenChangeProperty(
-    bool active,
-    SchemaProperty schemaProperty, {
-    dynamic optionalValue,
-    Schema? mainSchema,
-    String? idOptional,
-  }) async {
+  void listenChangeProperty(bool active, SchemaProperty schemaProperty,
+      {dynamic optionalValue, Schema? mainSchema, String? idOptional}) async {
     try {
       // Eliminamos los nuevos imputs agregados
       await _removeCreatedItemsSafeMode(schemaProperty);
@@ -81,8 +76,7 @@ class ObjectSchemaInherited extends InheritedWidget {
           for (Map<String, dynamic> oneOf in oneOfs) {
             // Verificamos si es el que requerimos
             if (oneOf.containsKey('properties') &&
-                !oneOf['properties'].containsKey(schemaProperty.id))
-              continue;
+                !oneOf['properties'].containsKey(schemaProperty.id)) continue;
 
             // Verificamos que tenga la estructura enum correcta
             if (oneOf['properties'][schemaProperty.id] is! Map ||
@@ -111,20 +105,17 @@ class ObjectSchemaInherited extends InheritedWidget {
                   .where((e) => e.id != schemaProperty.id)
                   // Agregamos que fue dependiente de este, para que luego pueda ser eliminado.
                   .map((e) {
-                    e.dependentsAddedBy.addAll([
-                      ...schemaProperty.dependentsAddedBy,
-                      schemaProperty.id,
-                    ]);
-                    if (e is SchemaProperty) e.setDependents(schemaObject);
+                e.dependentsAddedBy.addAll([
+                  ...schemaProperty.dependentsAddedBy,
+                  schemaProperty.id,
+                ]);
+                if (e is SchemaProperty) e.setDependents(schemaObject);
 
-                    return e;
-                  })
-                  .toList();
+                return e;
+              }).toList();
 
-              schemaObject.properties!.insertAll(
-                indexProperty + 1,
-                newProperties,
-              );
+              schemaObject.properties!
+                  .insertAll(indexProperty + 1, newProperties);
             }
           }
         }
@@ -141,9 +132,8 @@ class ObjectSchemaInherited extends InheritedWidget {
         } else {
           // match by raw id: idKey is path-qualified for nested objects and
           // would never match, leaving the dependent field stuck in the form
-          schemaObject.properties!.removeWhere(
-            (element) => element.id == schema.id,
-          );
+          schemaObject.properties!
+              .removeWhere((element) => element.id == schema.id);
         }
 
         schemaProperty.isDependentsActive = active;
@@ -156,8 +146,7 @@ class ObjectSchemaInherited extends InheritedWidget {
   }
 
   Future<void> _removeCreatedItemsSafeMode(
-    SchemaProperty schemaProperty,
-  ) async {
+      SchemaProperty schemaProperty) async {
     bool filter(Schema element) =>
         (element).dependentsAddedBy.contains(schemaProperty.id);
 
