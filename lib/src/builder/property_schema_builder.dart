@@ -322,6 +322,14 @@ class PropertySchemaBuilder extends StatelessWidget {
       schemaProperty.idKey,
       val,
     );
+    final objectScope = ObjectSchemaInherited.of(context);
+    if ((mainSchema as SchemaObject).resolveConditions(
+      widgetBuilderInherited.data,
+    )) {
+      objectScope.listen(
+        ObjectSchemaDependencyEvent(schemaObject: objectScope.schemaObject),
+      );
+    }
   }
 
   // @temp Functions

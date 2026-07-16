@@ -21,21 +21,15 @@ class ObjectSchemaBuilder extends StatefulWidget {
 }
 
 class _ObjectSchemaBuilderState extends State<ObjectSchemaBuilder> {
-  late SchemaObject _schemaObject;
-
-  @override
-  void initState() {
-    super.initState();
-    _schemaObject = widget.schemaObject;
-  }
-
   @override
   Widget build(BuildContext context) {
+    final parentScope = ObjectSchemaInherited.maybeOf(context);
     return ObjectSchemaInherited(
-      schemaObject: _schemaObject,
+      schemaObject: widget.schemaObject,
       listen: (value) {
         if (value is ObjectSchemaDependencyEvent) {
-          setState(() => _schemaObject = value.schemaObject);
+          if (mounted) setState(() {});
+          parentScope?.listen(value);
         }
       },
       child: Column(

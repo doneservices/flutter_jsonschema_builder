@@ -30,6 +30,9 @@ class ObjectSchemaInherited extends InheritedWidget {
     return result!;
   }
 
+  static ObjectSchemaInherited? maybeOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<ObjectSchemaInherited>();
+
   @override
   bool updateShouldNotify(covariant ObjectSchemaInherited oldWidget) {
     final needsRepint = schemaObject != oldWidget.schemaObject;
