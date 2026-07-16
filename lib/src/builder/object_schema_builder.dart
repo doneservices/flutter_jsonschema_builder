@@ -28,7 +28,7 @@ class _ObjectSchemaBuilderState extends State<ObjectSchemaBuilder> {
       schemaObject: widget.schemaObject,
       listen: (value) {
         if (value is ObjectSchemaDependencyEvent) {
-          setState(() {});
+          if (mounted) setState(() {});
           parentScope?.listen(value);
         }
       },
