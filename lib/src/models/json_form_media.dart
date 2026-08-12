@@ -50,6 +50,8 @@ class JsonFormMedia {
   /// Url, asset path, or whatever the [type]'s renderer expects.
   final String src;
 
+  /// Rendered height in logical pixels. Built-in step images use their
+  /// intrinsic height when this is omitted.
   final double? height;
 
   final BoxFit fit;

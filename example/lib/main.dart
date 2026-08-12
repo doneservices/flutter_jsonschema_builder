@@ -115,7 +115,7 @@ const demoUiSchema = '''
     "attachments"
   ],
   "name": {
-    "ui:media": {"type": "asset", "src": "assets/gradient.png", "height": 120}
+    "ui:media": {"type": "asset", "src": "assets/gradient.png"}
   },
   "favoriteColor": {
     "ui:media": {"type": "lottie", "src": "assets/pulse.json", "height": 120}

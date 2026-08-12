@@ -204,6 +204,20 @@ void main() {
   });
 
   group('stepped display mode', () {
+    testWidgets('built-in step images use their intrinsic height by default',
+        (tester) async {
+      await tester.pumpWidget(MaterialApp(
+        home: JsonFormStepMedia(
+          media: JsonFormMedia(
+            type: 'image',
+            src: 'https://example.com/image.png',
+          ),
+        ),
+      ));
+
+      expect(tester.widget<Image>(find.byType(Image)).height, isNull);
+    });
+
     testWidgets(
         'shows one step at a time with the object title as header '
         'and a progress counter', (tester) async {
