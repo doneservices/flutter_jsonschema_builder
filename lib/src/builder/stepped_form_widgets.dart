@@ -133,7 +133,7 @@ class JsonFormStepMedia extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    return Image(
+    final image = Image(
       image: media.type == 'asset'
           ? AssetImage(media.src)
           : NetworkImage(media.src) as ImageProvider,
@@ -141,5 +141,14 @@ class JsonFormStepMedia extends StatelessWidget {
       fit: media.fit,
       errorBuilder: (_, __, ___) => const SizedBox.shrink(),
     );
+
+    if (media.height == null && media.aspectRatio != null) {
+      return SizedBox(
+        width: double.infinity,
+        child: AspectRatio(aspectRatio: media.aspectRatio!, child: image),
+      );
+    }
+
+    return image;
   }
 }

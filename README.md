@@ -250,14 +250,17 @@ ui schema with `ui:media` on a field or on a nested object:
   "ui:media": {
     "type": "image",
     "src": "https://example.com/mail.png",
-    "height": 160,
+    "aspectRatio": 1.78,
     "fit": "cover"
   }
 }
 ```
 
 The package renders the types `image` (network url) and `asset` (bundled
-asset) out of the box. Any other type is handed to
+asset) out of the box. Images use their intrinsic dimensions unless `height`
+is set. For network images, specify `aspectRatio` (width divided by height)
+to reserve a full-width box before loading and prevent content layout shift;
+`height` takes precedence when both are supplied. Any other type is handed to
 `JsonFormSteppedConfig.mediaBuilder`, so the package stays dependency-free
 while apps bring their own players — e.g. Lottie:
 

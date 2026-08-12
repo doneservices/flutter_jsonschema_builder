@@ -8,7 +8,7 @@ import 'package:flutter/widgets.dart';
 ///   "ui:media": {
 ///     "type": "image",
 ///     "src": "https://example.com/hello.png",
-///     "height": 220,
+///     "aspectRatio": 1.78,
 ///     "fit": "cover"
 ///   }
 /// }
@@ -23,6 +23,7 @@ class JsonFormMedia {
     required this.type,
     required this.src,
     this.height,
+    this.aspectRatio,
     this.fit = BoxFit.contain,
   });
 
@@ -31,6 +32,12 @@ class JsonFormMedia {
   /// crash form construction
   factory JsonFormMedia.fromJson(Map<String, dynamic> json) {
     final height = json['height'];
+    final aspectRatio = json['aspectRatio'];
+    final parsedAspectRatio = aspectRatio is num
+        ? aspectRatio.toDouble()
+        : aspectRatio is String
+            ? double.tryParse(aspectRatio)
+            : null;
     return JsonFormMedia(
       type: json['type']?.toString() ?? 'image',
       src: json['src']?.toString() ?? '',
@@ -39,6 +46,12 @@ class JsonFormMedia {
           : height is String
               ? double.tryParse(height)
               : null,
+      aspectRatio:
+          parsedAspectRatio != null &&
+              parsedAspectRatio.isFinite &&
+              parsedAspectRatio > 0
+          ? parsedAspectRatio
+          : null,
       fit: BoxFit.values.asNameMap()[json['fit']] ?? BoxFit.contain,
     );
   }
@@ -53,6 +66,10 @@ class JsonFormMedia {
   /// Rendered height in logical pixels. Built-in step images use their
   /// intrinsic height when this is omitted.
   final double? height;
+
+  /// Width divided by height for a built-in step image. When [height] is not
+  /// set, this reserves a full-width media box before a network image loads.
+  final double? aspectRatio;
 
   final BoxFit fit;
 }

@@ -191,7 +191,7 @@ void main() {
       const uiSchema = '''
       {
         "age": {"ui:media": "not-a-map"},
-        "bio": {"ui:media": {"type": "image", "src": "a.png", "height": "120"}}
+        "bio": {"ui:media": {"type": "image", "src": "a.png", "height": "120", "aspectRatio": "1.5"}}
       }
       ''';
       final schema = parseSchema(testJsonSchema, uiSchema: uiSchema);
@@ -200,6 +200,7 @@ void main() {
 
       expect(age.uiMedia, isNull);
       expect(bio.uiMedia?.height, 120.0);
+      expect(bio.uiMedia?.aspectRatio, 1.5);
     });
   });
 
@@ -215,6 +216,30 @@ void main() {
         ),
       ));
 
+      expect(tester.widget<Image>(find.byType(Image)).height, isNull);
+    });
+
+    testWidgets('aspect ratio reserves space for a built-in step image',
+        (tester) async {
+      await tester.pumpWidget(MaterialApp(
+        home: Scaffold(
+          body: Align(
+            alignment: Alignment.topLeft,
+            child: SizedBox(
+              width: 320,
+              child: JsonFormStepMedia(
+                media: JsonFormMedia(
+                  type: 'image',
+                  src: 'https://example.com/image.png',
+                  aspectRatio: 16 / 9,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ));
+
+      expect(tester.getSize(find.byType(AspectRatio)), const Size(320, 180));
       expect(tester.widget<Image>(find.byType(Image)).height, isNull);
     });
 
