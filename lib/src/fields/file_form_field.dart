@@ -138,7 +138,11 @@ class _FileJFormFieldState extends State<FileJFormField> {
   }
 
   void change(List<SchemaFormFile>? values) {
-    _fieldKey.currentState!.didChange(values);
+    // Async handlers can complete after this field has been disposed.
+    final fieldState = _fieldKey.currentState;
+    if (!mounted || fieldState == null) return;
+
+    fieldState.didChange(values);
 
     if (widget.onChanged != null) {
       final response = widget.property.isMultipleFile
