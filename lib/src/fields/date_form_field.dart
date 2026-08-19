@@ -47,9 +47,11 @@ class _DateJFormFieldState extends State<DateJFormField> {
         FieldHeader(property: widget.property),
         TextFormField(
           key: Key(widget.property.idKey),
+          // No initialValue here: TextFormField asserts when given both a
+          // controller and an initialValue. The default value is seeded into
+          // txtDateCtrl in initState instead.
           controller: txtDateCtrl,
           keyboardType: TextInputType.phone,
-          initialValue: widget.property.defaultValue,
           validator: (value) {
             if (widget.property.required && (value == null || value.isEmpty)) {
               return uiConfig.requiredText ?? 'Required';
