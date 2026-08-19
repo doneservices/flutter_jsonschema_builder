@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -74,6 +75,87 @@ void main() {
     expect(savedData, {
       'files': ['stored-file-1.jpg', 'stored-file-2.jpg'],
     });
+  });
+
+  testWidgets('file handler completing after the field is disposed '
+      'does not crash', (tester) async {
+    final pickCompleter = Completer<List<SchemaFormFile>?>();
+
+    await tester.pumpWidget(
+      _TestApp(
+        form: JsonForm(
+          jsonSchema: json.encode(_schemaWithMultipleFiles),
+          initialData: const <String, dynamic>{},
+          onFormDataSaved: (_) {},
+          fileHandler: () => {'*': (_) => pickCompleter.future},
+          jsonFormSchemaUiConfig: JsonFormSchemaUiConfig(
+            addFileButtonBuilder: (onPressed, _) {
+              return ElevatedButton(
+                onPressed: onPressed,
+                child: const Text('Add file'),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Add file'));
+    await tester.pump();
+
+    // Dispose the form while the pick/upload is still in flight.
+    await tester.pumpWidget(const _TestApp(form: SizedBox.shrink()));
+
+    pickCompleter.complete([
+      SchemaFormFile(
+        name: 'late-file.jpg',
+        value: 'stored-late-file.jpg',
+        bytes: Uint8List(0),
+      ),
+    ]);
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('initial value handler completing after the field is disposed '
+      'does not crash', (tester) async {
+    final hydrateCompleter = Completer<List<SchemaFormFile>?>();
+
+    await tester.pumpWidget(
+      _TestApp(
+        form: JsonForm(
+          jsonSchema: json.encode(_schemaWithMultipleFiles),
+          initialData: const <String, dynamic>{
+            'files': <String>['stored-file-1.jpg'],
+          },
+          onFormDataSaved: (_) {},
+          fileHandler: () => {'*': (_) async => const []},
+          initialFileValueHandler: () => {
+            '*': (_) => hydrateCompleter.future,
+          },
+          jsonFormSchemaUiConfig: JsonFormSchemaUiConfig(
+            addFileButtonBuilder: (_, __) => const SizedBox.shrink(),
+          ),
+        ),
+      ),
+    );
+
+    await tester.pump();
+
+    // Dispose the form while the initial download is still in flight.
+    await tester.pumpWidget(const _TestApp(form: SizedBox.shrink()));
+
+    hydrateCompleter.complete([
+      SchemaFormFile(
+        name: 'stored-file-1.jpg',
+        value: 'stored-file-1.jpg',
+        bytes: Uint8List(0),
+      ),
+    ]);
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('multiple file field hydrates array initial data', (
