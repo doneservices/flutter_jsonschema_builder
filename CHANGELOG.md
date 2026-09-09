@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+* Added video file fields. The example supports recording, photo-library and
+  Files selection from one button, with image and video previews.
+
 ## 0.3.0
 
 * Added RJSF-compatible conditional fields using JSON Schema

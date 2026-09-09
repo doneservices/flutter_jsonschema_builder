@@ -106,14 +106,14 @@ class _TextJFormFieldState extends State<TextJFormField> {
               });
             },
             validator: (String? value) {
-              if (widget.property.required && value != null) {
+              if (value != null) {
                 final validated = inputValidationJsonSchema(
                   newValue: value,
                   property: widget.property,
                 );
                 if (validated == 'Required') {
                   return uiConfig.requiredText ?? validated;
-                } else {
+                } else if (validated != null) {
                   return validated;
                 }
               }
@@ -167,6 +167,9 @@ class _TextJFormFieldState extends State<TextJFormField> {
         textInputType = TextInputType.emailAddress;
         break;
       case PropertyFormat.dataurl:
+        textInputType = TextInputType.text;
+        break;
+      case PropertyFormat.video:
         textInputType = TextInputType.text;
         break;
       case PropertyFormat.uri:

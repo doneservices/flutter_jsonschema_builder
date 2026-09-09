@@ -117,17 +117,25 @@ class SchemaArray extends Schema {
   bool required;
 
   bool isArrayMultipleFile() {
-    return (itemsBaseSchema is Map &&
-        itemsBaseSchema.containsKey('format') &&
-        itemsBaseSchema['format'] == 'data-url');
+    if (itemsBaseSchema is! Map) return false;
+
+    final format = propertyFormatFromString(
+      itemsBaseSchema['format']?.toString(),
+    );
+    return format == PropertyFormat.dataurl || format == PropertyFormat.video;
   }
 
   SchemaProperty toSchemaPropertyMultipleFiles() {
+    final itemFormat = propertyFormatFromString(
+      (itemsBaseSchema as Map)['format']?.toString(),
+    );
     return SchemaProperty(
         id: id,
         title: title,
         type: SchemaType.string,
-        format: PropertyFormat.dataurl,
+        format: itemFormat == PropertyFormat.video
+            ? PropertyFormat.video
+            : PropertyFormat.dataurl,
         required: required,
         description: description,
         defaultValue: defaultValue,

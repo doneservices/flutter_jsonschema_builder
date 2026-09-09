@@ -26,6 +26,12 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>This app records video answers.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>This app records audio with video answers.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>This app selects video answers from your library.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

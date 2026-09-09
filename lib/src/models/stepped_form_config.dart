@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'json_form_media.dart';
+import 'property_schema.dart';
 
 /// Builds a widget for a `ui:media` entry. Return `null` to fall back to the
 /// built-in rendering (`image`/`asset` types) or to render nothing for
@@ -13,6 +14,14 @@ typedef JsonFormStepProgressBuilder =
 
 /// Builds a navigation button that must invoke [onPressed] when tapped.
 typedef JsonFormStepButtonBuilder = Widget Function(VoidCallback onPressed);
+
+/// Builds compact previews for file answers on the review page.
+typedef JsonFormReviewFileBuilder =
+    Widget Function(
+      BuildContext context,
+      SchemaProperty property,
+      List<String> values,
+    );
 
 /// Formats a boolean answer for display (e.g. on the review step), the
 /// insertion point for i18n.
@@ -33,6 +42,7 @@ class JsonFormSteppedConfig {
     this.progressBuilder,
     this.nextButtonBuilder,
     this.backButtonBuilder,
+    this.reviewFileBuilder,
     this.nextButtonText = 'Next',
     this.backButtonText = 'Previous',
     this.submitButtonText = 'Submit',
@@ -72,6 +82,8 @@ class JsonFormSteppedConfig {
   final JsonFormStepButtonBuilder? nextButtonBuilder;
 
   final JsonFormStepButtonBuilder? backButtonBuilder;
+
+  final JsonFormReviewFileBuilder? reviewFileBuilder;
 
   final String nextButtonText;
 

@@ -551,6 +551,7 @@ class _ReviewPage extends StatelessWidget {
                   schema.title != kNoTitle ? schema.title : schema.id,
                 ),
                 subtitle: _valueWidget(
+                  context,
                   schema,
                   jsonFormDataAtPath(data, schema.idKey),
                 ),
@@ -564,19 +565,21 @@ class _ReviewPage extends StatelessWidget {
 
   /// file answers are data-url strings (or lists of them) — never show
   /// those; render one file icon per uploaded file instead
-  Widget _valueWidget(Schema schema, dynamic value) {
-    final isFileField =
-        schema is SchemaProperty && schema.format == PropertyFormat.dataurl;
+  Widget _valueWidget(BuildContext context, Schema schema, dynamic value) {
+    final isFileField = schema is SchemaProperty && schema.isFile;
     if (isFileField) {
-      final count = value == null || (value is List && value.isEmpty)
-          ? 0
-          : value is List
-          ? value.length
-          : 1;
-      if (count == 0) return const Text('—');
+      final values = value == null
+          ? const <String>[]
+          : (value is List ? value : [value])
+                .map((item) => item.toString())
+                .toList();
+      if (values.isEmpty) return const Text('—');
+      if (config.reviewFileBuilder != null) {
+        return config.reviewFileBuilder!(context, schema, values);
+      }
       return Row(
         children: [
-          for (var i = 0; i < count; i++)
+          for (var i = 0; i < values.length; i++)
             const Padding(
               padding: EdgeInsets.only(right: 4),
               child: Icon(Icons.insert_drive_file_outlined, size: 18),
