@@ -39,7 +39,7 @@ class _SelectedFormFieldState extends State<DropdownOneOfJFormField> {
         default:
           widget.property.enumm =
               widget.property.enumNames?.map((e) => e.toString()).toList() ??
-                  [];
+              [];
       }
     }
 
@@ -58,11 +58,13 @@ class _SelectedFormFieldState extends State<DropdownOneOfJFormField> {
     // fill selected value
 
     try {
-      final exists = listOfModel.firstWhere((e) =>
-          e.oneOfModelEnum is List &&
-          e.oneOfModelEnum!.map((i) => i.toLowerCase()).contains(
-                widget.property.defaultValue.toLowerCase(),
-              ));
+      final exists = listOfModel.firstWhere(
+        (e) =>
+            e.oneOfModelEnum is List &&
+            e.oneOfModelEnum!
+                .map((i) => i.toLowerCase())
+                .contains(widget.property.defaultValue.toLowerCase()),
+      );
 
       valueSelected = exists;
     } catch (e) {
@@ -106,12 +108,12 @@ class _SelectedFormFieldState extends State<DropdownOneOfJFormField> {
               items: _buildItems(),
               onChanged: _onChanged,
               onSaved: widget.onSaved,
-              decoration: widget.decoration ??
+              decoration:
+                  widget.decoration ??
                   InputDecoration(
-                    errorStyle: Theme.of(context)
-                        .textTheme
-                        .bodyMedium!
-                        .apply(color: Theme.of(context).colorScheme.error),
+                    errorStyle: Theme.of(context).textTheme.bodyMedium!.apply(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
                   ),
             ),
           ),
@@ -145,18 +147,19 @@ class _SelectedFormFieldState extends State<DropdownOneOfJFormField> {
     if (listOfModel.isEmpty) return [];
 
     return listOfModel
-        .map((item) => DropdownMenuItem<OneOfModel>(
-              value: item,
-              child: Text(
-                item.title ?? '',
-                style: widget.property.readOnly
-                    ? Theme.of(context)
-                        .textTheme
-                        .titleMedium!
-                        .apply(color: Colors.grey)
-                    : Theme.of(context).textTheme.titleMedium,
-              ),
-            ))
+        .map(
+          (item) => DropdownMenuItem<OneOfModel>(
+            value: item,
+            child: Text(
+              item.title ?? '',
+              style: widget.property.readOnly
+                  ? Theme.of(
+                      context,
+                    ).textTheme.titleMedium!.apply(color: Colors.grey)
+                  : Theme.of(context).textTheme.titleMedium,
+            ),
+          ),
+        )
         .toList();
   }
 }

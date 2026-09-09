@@ -47,9 +47,7 @@ class SchemaProperty extends Schema {
     this.pattern,
     this.oneOf,
     this.readOnly = false,
-  }) : super(
-          title: title ?? 'no-title',
-        );
+  }) : super(title: title ?? 'no-title');
 
   factory SchemaProperty.fromJson(
     String id,
@@ -66,7 +64,8 @@ class SchemaProperty extends Schema {
       description: json['description'],
       enumm: json['enum'],
       // labels default to the stringified enum values when not given
-      enumNames: json['enumNames'] ??
+      enumNames:
+          json['enumNames'] ??
           (json['enum'] as List?)?.map((e) => e.toString()).toList(),
       minLength: json['minLength'],
       maxLength: json['maxLength'],
@@ -98,33 +97,35 @@ class SchemaProperty extends Schema {
     String? parentIdKey,
     List<String>? dependentsAddedBy,
   }) {
-    var newSchema = SchemaProperty(
-        id: id,
-        title: title,
-        type: type,
-        description: description,
-        format: format,
-        defaultValue: defaultValue,
-        enumNames: enumNames,
-        enumm: enumm,
-        required: required,
-        oneOf: oneOf)
-      ..autoFocus = autoFocus
-      ..order = order
-      ..widget = widget
-      ..disabled = disabled
-      ..emptyValue = emptyValue
-      ..help = help
-      ..maxLength = maxLength
-      ..minLength = minLength
-      ..widget = widget
-      ..parentIdKey = parentIdKey ?? this.parentIdKey
-      ..dependentsAddedBy = dependentsAddedBy ?? this.dependentsAddedBy
-      ..required = required
-      ..dependents = dependents
-      ..isMultipleFile = isMultipleFile
-      ..uiMedia = uiMedia
-      ..uiGroup = uiGroup;
+    var newSchema =
+        SchemaProperty(
+            id: id,
+            title: title,
+            type: type,
+            description: description,
+            format: format,
+            defaultValue: defaultValue,
+            enumNames: enumNames,
+            enumm: enumm,
+            required: required,
+            oneOf: oneOf,
+          )
+          ..autoFocus = autoFocus
+          ..order = order
+          ..widget = widget
+          ..disabled = disabled
+          ..emptyValue = emptyValue
+          ..help = help
+          ..maxLength = maxLength
+          ..minLength = minLength
+          ..widget = widget
+          ..parentIdKey = parentIdKey ?? this.parentIdKey
+          ..dependentsAddedBy = dependentsAddedBy ?? this.dependentsAddedBy
+          ..required = required
+          ..dependents = dependents
+          ..isMultipleFile = isMultipleFile
+          ..uiMedia = uiMedia
+          ..uiGroup = uiGroup;
 
     return newSchema;
   }
@@ -178,8 +179,10 @@ class SchemaProperty extends Schema {
     }
   }
 
-  void setUiToProperty(Map<String, dynamic> uiSchema,
-      {bool isGeneralPass = false}) {
+  void setUiToProperty(
+    Map<String, dynamic> uiSchema, {
+    bool isGeneralPass = false,
+  }) {
     uiSchema.forEach((key, data) {
       switch (key) {
         case "ui:disabled":
@@ -222,9 +225,9 @@ class SchemaProperty extends Schema {
           fileType = data["fileType"];
           acceptedFiles = data["accept"] != null
               ? (data["accept"] as String)
-                  .split(',')
-                  .map((e) => e.trim())
-                  .toList()
+                    .split(',')
+                    .map((e) => e.trim())
+                    .toList()
               : null;
           break;
         default:

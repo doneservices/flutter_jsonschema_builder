@@ -34,8 +34,7 @@ class JsonFormStepProgress extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final minHeight =
-        ProgressIndicatorTheme.of(context).linearMinHeight ?? 4.0;
+    final minHeight = ProgressIndicatorTheme.of(context).linearMinHeight ?? 4.0;
 
     return Row(
       children: [

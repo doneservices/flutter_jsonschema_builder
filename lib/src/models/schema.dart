@@ -1,4 +1,5 @@
 import '../models/models.dart';
+
 // Esto transforma el JSON a Modelos
 
 enum SchemaType { string, number, boolean, integer, object, array, enumm }
@@ -108,13 +109,13 @@ class Schema {
     List<String>? dependentsAddedBy,
   }) {
     return Schema(
-      id: id,
-      type: type,
-      title: title,
-      description: description,
-      parentIdKey: parentIdKey ?? this.parentIdKey,
-      dependentsAddedBy: dependentsAddedBy ?? this.dependentsAddedBy,
-    )
+        id: id,
+        type: type,
+        title: title,
+        description: description,
+        parentIdKey: parentIdKey ?? this.parentIdKey,
+        dependentsAddedBy: dependentsAddedBy ?? this.dependentsAddedBy,
+      )
       ..uiMedia = uiMedia
       ..uiGroup = uiGroup;
   }
@@ -123,7 +124,7 @@ class Schema {
 // Solucion temporal y personalizada
 class SchemaEnum extends Schema {
   SchemaEnum({required this.enumm})
-      : super(id: kNoIdKey, title: 'no-title', type: SchemaType.enumm);
+    : super(id: kNoIdKey, title: 'no-title', type: SchemaType.enumm);
 
   final List<String> enumm;
 }

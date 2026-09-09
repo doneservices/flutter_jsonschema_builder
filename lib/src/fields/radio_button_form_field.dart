@@ -39,7 +39,7 @@ class _RadioButtonJFormFieldState extends State<RadioButtonJFormField> {
         default:
           widget.property.enumm =
               widget.property.enumNames?.map((e) => e.toString()).toList() ??
-                  [];
+              [];
       }
     }
 
@@ -98,26 +98,27 @@ class _RadioButtonJFormFieldState extends State<RadioButtonJFormField> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: List<Widget>.generate(
-                    widget.property.enumNames?.length ??
-                        widget.property.enumm?.length ??
-                        0,
-                    (int i) => RadioListTile(
-                          dense: true,
-                          contentPadding: EdgeInsets.zero,
-                          enabled: !widget.property.readOnly,
-                          value: widget.property.enumm != null
-                              ? widget.property.enumm![i]
-                              : i,
-                          title: Text(
-                              widget.property.enumNames?[i] ??
-                                  widget.property.enumm![i].toString(),
-                              style: widget.property.readOnly
-                                  ? Theme.of(context)
-                                      .textTheme
-                                      .titleMedium!
-                                      .apply(color: Colors.grey)
-                                  : Theme.of(context).textTheme.titleMedium),
-                        )),
+                  widget.property.enumNames?.length ??
+                      widget.property.enumm?.length ??
+                      0,
+                  (int i) => RadioListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    enabled: !widget.property.readOnly,
+                    value: widget.property.enumm != null
+                        ? widget.property.enumm![i]
+                        : i,
+                    title: Text(
+                      widget.property.enumNames?[i] ??
+                          widget.property.enumm![i].toString(),
+                      style: widget.property.readOnly
+                          ? Theme.of(
+                              context,
+                            ).textTheme.titleMedium!.apply(color: Colors.grey)
+                          : Theme.of(context).textTheme.titleMedium,
+                    ),
+                  ),
+                ),
               ),
             ),
             if (field.hasError) CustomErrorText(text: field.errorText!),

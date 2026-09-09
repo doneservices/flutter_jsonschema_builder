@@ -35,7 +35,7 @@ class JsonFormSchemaUiConfig {
   /// render a custom button
   /// if it returns null or it is null, it will build default buttom
   Widget? Function(AsyncCallback? onPressed, SchemaProperty property)?
-      addFileButtonBuilder;
+  addFileButtonBuilder;
 
   /// render a custom files preview
   ///
@@ -45,8 +45,11 @@ class JsonFormSchemaUiConfig {
   /// and [onRemove] callback is provided so you can handle files removal from cusotm widgets
   ///
   /// if it returns `null`, default files names widget will be displayed
-  Widget Function(List<SchemaFormFile>? files,
-      {required ValueChanged<String> onRemove})? filesBuilder;
+  Widget Function(
+    List<SchemaFormFile>? files, {
+    required ValueChanged<String> onRemove,
+  })?
+  filesBuilder;
 
   /// decoration for text fields
   InputDecoration? inputDecoration;

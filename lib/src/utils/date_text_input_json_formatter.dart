@@ -6,7 +6,9 @@ const String dateTimeFormatString = 'yyyy-MM-dd hh:mm:ss';
 class DateTextInputJsonFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
-      TextEditingValue oldValue, TextEditingValue newValue) {
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
     if (oldValue.text.length >= newValue.text.length) {
       return newValue;
     }
@@ -30,51 +32,56 @@ class DateTextInputJsonFormatter extends TextInputFormatter {
     }
 
     if (dateText.length == 4) {
-      if (!RegExp(r'(0[1-9]|1[0-9]|2[0-9]|3[0-1])-([0-1])$')
-          .hasMatch(dateText)) {
+      if (!RegExp(
+        r'(0[1-9]|1[0-9]|2[0-9]|3[0-1])-([0-1])$',
+      ).hasMatch(dateText)) {
         return oldValue;
       }
     }
 
     if (dateText.length == 5) {
-      if (!RegExp(r'(0[1-9]|1[0-9]|2[0-9]|3[0-1])-(0[1-9]|1[0-2])$')
-          .hasMatch(dateText)) {
+      if (!RegExp(
+        r'(0[1-9]|1[0-9]|2[0-9]|3[0-1])-(0[1-9]|1[0-2])$',
+      ).hasMatch(dateText)) {
         return oldValue;
       }
     }
     if (dateText.length == 7) {
-      if (!RegExp(r'(0[1-9]|1[0-9]|2[0-9]|3[0-1])-(0[1-9]|1[0-2])-([1-2])$')
-          .hasMatch(dateText)) {
+      if (!RegExp(
+        r'(0[1-9]|1[0-9]|2[0-9]|3[0-1])-(0[1-9]|1[0-2])-([1-2])$',
+      ).hasMatch(dateText)) {
         return oldValue;
       }
     }
 
     if (dateText.length == 8) {
       if (!RegExp(
-              r'(0[1-9]|1[0-9]|2[0-9]|3[0-1])-(0[1-9]|1[0-2])-(1[9]|2[0|9])$')
-          .hasMatch(dateText)) {
+        r'(0[1-9]|1[0-9]|2[0-9]|3[0-1])-(0[1-9]|1[0-2])-(1[9]|2[0|9])$',
+      ).hasMatch(dateText)) {
         return oldValue;
       }
     }
 
     if (dateText.length == 9) {
       if (!RegExp(
-              r'(0[1-9]|1[0-9]|2[0-9]|3[0-1])-(0[1-9]|1[0-2])-(19[89]|20[0-3])$')
-          .hasMatch(dateText)) {
+        r'(0[1-9]|1[0-9]|2[0-9]|3[0-1])-(0[1-9]|1[0-2])-(19[89]|20[0-3])$',
+      ).hasMatch(dateText)) {
         return oldValue;
       }
     }
 
     if (dateText.length == 10) {
       if (!RegExp(
-              r'(0[1-9]|1[0-9]|2[0-9]|3[0-1])-(0[1-9]|1[0-2])-(19[89][0-9]|20[0-3][0-9])$')
-          .hasMatch(dateText)) {
+        r'(0[1-9]|1[0-9]|2[0-9]|3[0-1])-(0[1-9]|1[0-2])-(19[89][0-9]|20[0-3][0-9])$',
+      ).hasMatch(dateText)) {
         return oldValue;
       }
     }
 
     return newValue.copyWith(
-        text: dateText, selection: updateCursorPosition(dateText));
+      text: dateText,
+      selection: updateCursorPosition(dateText),
+    );
   }
 
   String _addSeperators(String value, String seperator) {

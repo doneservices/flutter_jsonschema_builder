@@ -35,7 +35,10 @@ class _ArraySchemaBuilderState extends State<ArraySchemaBuilder> {
       onSaved: (_) {
         if (widget.schemaArray.items.isEmpty) {
           widgetBuilderInherited.updateObjectData(
-              widgetBuilderInherited.data, widget.schemaArray.idKey, []);
+            widgetBuilderInherited.data,
+            widget.schemaArray.idKey,
+            [],
+          );
         }
       },
       builder: (field) {
@@ -57,10 +60,13 @@ class _ArraySchemaBuilderState extends State<ArraySchemaBuilder> {
                   // if (index >= 1)
                   Align(
                     alignment: Alignment.centerRight,
-                    child: widgetBuilderInherited.uiConfig.removeItemBuilder !=
+                    child:
+                        widgetBuilderInherited.uiConfig.removeItemBuilder !=
                             null
                         ? widgetBuilderInherited.uiConfig.removeItemBuilder!(
-                            () => _removeItem(index), widget.schemaArray.idKey)
+                            () => _removeItem(index),
+                            widget.schemaArray.idKey,
+                          )
                         : TextButton.icon(
                             onPressed: () => _removeItem(index),
                             icon: const Icon(Icons.remove),
@@ -91,7 +97,9 @@ class _ArraySchemaBuilderState extends State<ArraySchemaBuilder> {
             alignment: Alignment.centerRight,
             child: widgetBuilderInherited.uiConfig.addItemBuilder != null
                 ? widgetBuilderInherited.uiConfig.addItemBuilder!(
-                    _addItem, widget.schemaArray.idKey)
+                    _addItem,
+                    widget.schemaArray.idKey,
+                  )
                 : TextButton.icon(
                     onPressed: _addItem,
                     icon: const Icon(Icons.add),
@@ -133,19 +141,22 @@ class _ArraySchemaBuilderState extends State<ArraySchemaBuilder> {
       final initialData = WidgetBuilderInherited.of(context).data;
       widget.schemaArray.items =
           (widget.schemaArray.itemsBaseSchema as List<Map<String, dynamic>>)
-              .map((e) => Schema.fromJson(
-                    e,
-                    id: '0',
-                    parent: widget.schemaArray,
-                    initialData: initialData,
-                  ))
+              .map(
+                (e) => Schema.fromJson(
+                  e,
+                  id: '0',
+                  parent: widget.schemaArray,
+                  initialData: initialData,
+                ),
+              )
               .toList();
     }
   }
 
   void _addItemFromFirstSchema() {
-    final newSchemaObject = widget.schemaArray.items.first
-        .copyWith(id: widget.schemaArray.items.length.toString());
+    final newSchemaObject = widget.schemaArray.items.first.copyWith(
+      id: widget.schemaArray.items.length.toString(),
+    );
 
     widget.schemaArray.items.add(newSchemaObject);
   }

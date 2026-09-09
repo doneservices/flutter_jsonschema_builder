@@ -10,25 +10,21 @@ OneOfModel oneOfModelFromJson(String str) =>
 String oneOfModelToJson(OneOfModel data) => json.encode(data.toJson());
 
 class OneOfModel {
-  OneOfModel({
-    this.oneOfModelEnum,
-    this.type,
-    this.title,
-  });
+  OneOfModel({this.oneOfModelEnum, this.type, this.title});
 
   List<dynamic>? oneOfModelEnum;
   String? type;
   String? title;
 
   factory OneOfModel.fromJson(Map<String, dynamic> json) => OneOfModel(
-        oneOfModelEnum: List<String>.from(json["enum"].map((x) => x)),
-        type: json["type"],
-        title: json["title"],
-      );
+    oneOfModelEnum: List<String>.from(json["enum"].map((x) => x)),
+    type: json["type"],
+    title: json["title"],
+  );
 
   Map<String, dynamic> toJson() => {
-        "enum": List<dynamic>.from(oneOfModelEnum?.map((x) => x) ?? []),
-        "type": type,
-        "title": title,
-      };
+    "enum": List<dynamic>.from(oneOfModelEnum?.map((x) => x) ?? []),
+    "type": type,
+    "title": title,
+  };
 }

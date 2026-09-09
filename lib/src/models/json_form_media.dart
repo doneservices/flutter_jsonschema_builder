@@ -37,8 +37,8 @@ class JsonFormMedia {
       height: height is num
           ? height.toDouble()
           : height is String
-              ? double.tryParse(height)
-              : null,
+          ? double.tryParse(height)
+          : null,
       fit: BoxFit.values.asNameMap()[json['fit']] ?? BoxFit.contain,
     );
   }

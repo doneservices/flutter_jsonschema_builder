@@ -131,9 +131,7 @@ void main() {
           },
           onFormDataSaved: (_) {},
           fileHandler: () => {'*': (_) async => const []},
-          initialFileValueHandler: () => {
-            '*': (_) => hydrateCompleter.future,
-          },
+          initialFileValueHandler: () => {'*': (_) => hydrateCompleter.future},
           jsonFormSchemaUiConfig: JsonFormSchemaUiConfig(
             addFileButtonBuilder: (_, __) => const SizedBox.shrink(),
           ),
@@ -164,10 +162,7 @@ void main() {
     dynamic handlerValue;
     List<SchemaFormFile>? renderedFiles;
     final initialData = <String, dynamic>{
-      'files': <String>[
-        'stored-file-1.jpg',
-        'stored-file-2.jpg',
-      ],
+      'files': <String>['stored-file-1.jpg', 'stored-file-2.jpg'],
     };
 
     await tester.pumpWidget(

@@ -1,8 +1,10 @@
 import 'package:flutter_jsonschema_builder/src/helpers/is_url.dart';
 import 'package:flutter_jsonschema_builder/src/models/property_schema.dart';
 
-String? inputValidationJsonSchema(
-    {required String newValue, required SchemaProperty property}) {
+String? inputValidationJsonSchema({
+  required String newValue,
+  required SchemaProperty property,
+}) {
   if (newValue.isEmpty) {
     return 'Required';
   }
