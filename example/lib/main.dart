@@ -1,9 +1,10 @@
 import 'dart:convert';
 
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_jsonschema_builder/flutter_jsonschema_builder.dart';
 import 'package:lottie/lottie.dart';
+
+import 'demo_file_handling.dart';
 
 void main() {
   runApp(const MyApp());
@@ -77,6 +78,12 @@ const demoJsonSchema = '''
       "title": "Attachments",
       "description": "Multiple files via an array of data-urls",
       "items": {"type": "string", "format": "data-url"}
+    },
+    "video": {
+      "type": "string",
+      "format": "data-url",
+      "title": "Video response",
+      "description": "Choose an existing video or record one with the camera"
     }
   },
   "required": ["email", "favoriteColor", "newsletter", "avatar"],
@@ -112,7 +119,8 @@ const demoUiSchema = '''
     "street",
     "city",
     "avatar",
-    "attachments"
+    "attachments",
+    "video"
   ],
   "name": {
     "ui:media": {"type": "asset", "src": "assets/gradient.png"}
@@ -126,6 +134,9 @@ const demoUiSchema = '''
   "attachments": {
     "ui:options": {"filePreview": true, "fileType": "image"}
   },
+  "video": {
+    "ui:options": {"filePreview": true, "fileType": "video", "accept": ".mp4,.mov,.m4v"}
+  },
   "street": {"ui:group": "address"},
   "city": {"ui:group": "address"}
 }
@@ -136,45 +147,6 @@ class DemoHomePage extends StatefulWidget {
 
   @override
   State<DemoHomePage> createState() => _DemoHomePageState();
-}
-
-/// Default file handler for every `data-url` field: opens the platform file
-/// picker and encodes the result as a data URL, matching the schema format.
-Future<List<SchemaFormFile>?> _pickFiles(SchemaProperty property) async {
-  final result = await FilePicker.pickFiles(
-    withData: true,
-    allowMultiple: property.isMultipleFile,
-  );
-  final files = result?.files ?? [];
-  if (files.isEmpty) return null;
-  // ponytail: covers the formats this demo realistically picks; use
-  // package:mime if an app needs full coverage
-  const mimeTypes = {
-    'jpg': 'image/jpeg',
-    'jpeg': 'image/jpeg',
-    'png': 'image/png',
-    'gif': 'image/gif',
-    'webp': 'image/webp',
-    'bmp': 'image/bmp',
-    'heic': 'image/heic',
-    'pdf': 'application/pdf',
-  };
-  return files
-      .where((f) => f.bytes != null)
-      .map(
-        (f) => SchemaFormFile(
-          name: f.name,
-          value:
-              Uri.dataFromBytes(
-                f.bytes!,
-                mimeType:
-                    mimeTypes[f.extension?.toLowerCase()] ??
-                    'application/octet-stream',
-              ).toString(),
-          bytes: f.bytes!,
-        ),
-      )
-      .toList();
 }
 
 class _DemoHomePageState extends State<DemoHomePage> {
@@ -251,12 +223,14 @@ class _DemoHomePageState extends State<DemoHomePage> {
       jsonSchema: demoJsonSchema,
       uiSchema: demoUiSchema,
       showDebugElements: false,
-      fileHandler: () => {'*': _pickFiles},
+      fileHandler: () => {'*': (property) => pickDemoFiles(context, property)},
+      jsonFormSchemaUiConfig: buildDemoFileUiConfig(),
       displayMode: JsonFormDisplayMode.stepped,
       steppedConfig: JsonFormSteppedConfig(
         transitionAxis: _transitionAxis,
         showReviewStep: _showReviewStep,
         reviewDescription: 'Tap an answer to change it.',
+        reviewFileBuilder: demoReviewFileBuilder,
         mediaBuilder: (context, media) {
           if (media.type == 'lottie') {
             return Lottie.asset(media.src, height: media.height ?? 160);
@@ -274,7 +248,9 @@ class _DemoHomePageState extends State<DemoHomePage> {
         jsonSchema: demoJsonSchema,
         uiSchema: demoUiSchema,
         showDebugElements: false,
-        fileHandler: () => {'*': _pickFiles},
+        fileHandler:
+            () => {'*': (property) => pickDemoFiles(context, property)},
+        jsonFormSchemaUiConfig: buildDemoFileUiConfig(),
         onFormDataSaved: _showResult,
       ),
     );

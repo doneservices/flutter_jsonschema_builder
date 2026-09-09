@@ -1,7 +1,6 @@
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_jsonschema_builder/src/builder/field_header_widget.dart';
+import 'package:flutter_jsonschema_builder/src/builder/logic/widget_builder_logic.dart';
 import 'package:flutter_jsonschema_builder/src/fields/fields.dart';
 import 'package:flutter_jsonschema_builder/src/fields/shared.dart';
 import '../models/models.dart';
@@ -27,8 +26,6 @@ class _RadioButtonJFormFieldState extends State<RadioButtonJFormField> {
 
   @override
   void initState() {
-    print(widget.property.defaultValue);
-
     // fill enum property
 
     if (widget.property.enumm == null) {
@@ -43,12 +40,7 @@ class _RadioButtonJFormFieldState extends State<RadioButtonJFormField> {
       }
     }
 
-    // fill groupValue
-    if (widget.property.type == SchemaType.boolean) {
-      groupValue = widget.property.defaultValue;
-    } else {
-      groupValue = widget.property.defaultValue ?? 0;
-    }
+    groupValue = widget.property.defaultValue;
 
     widget.triggetDefaultValue();
     super.initState();
@@ -65,7 +57,7 @@ class _RadioButtonJFormFieldState extends State<RadioButtonJFormField> {
       return true;
     }(), '[enumNames] and [enum]  must be the same size ');
 
-    inspect(widget.property);
+    final uiConfig = WidgetBuilderInherited.of(context).uiConfig;
     return FormField<dynamic>(
       key: Key(widget.property.idKey),
       autovalidateMode: AutovalidateMode.onUserInteraction,
@@ -74,6 +66,9 @@ class _RadioButtonJFormFieldState extends State<RadioButtonJFormField> {
         widget.onSaved(newValue);
       },
       validator: (value) {
+        if (widget.property.required && value == null) {
+          return uiConfig.requiredText ?? 'Required';
+        }
         if (widget.customValidator != null)
           return widget.customValidator!(value);
 

@@ -157,7 +157,6 @@ class _FileJFormFieldState extends State<FileJFormField> {
     if (widget.property.readOnly) return;
 
     final result = await widget.fileHandler(widget.property);
-
     if (result != null) {
       final nextValue = widget.property.isMultipleFile
           ? [...?_fieldKey.currentState?.value, ...result]

@@ -176,7 +176,7 @@ class PropertySchemaBuilder extends StatelessWidget {
             break;
           }
 
-          if (schemaProperty.format == PropertyFormat.dataurl) {
+          if (schemaProperty.isFile) {
             assert(
               WidgetBuilderInherited.of(context).fileHandler != null,
               'File handler can not be null when using file inputs',

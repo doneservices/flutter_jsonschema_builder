@@ -7,6 +7,58 @@ import 'package:flutter_jsonschema_builder/flutter_jsonschema_builder.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('video formats are file fields and support video UI options', () {
+    final video = SchemaProperty.fromJson('video', {
+      'type': 'string',
+      'format': 'video',
+    });
+    final legacyVideo = SchemaProperty.fromJson('legacyVideo', {
+      'type': 'string',
+      'format': 'data-url',
+    });
+    legacyVideo.setUi({
+      'ui:options': {'fileType': 'video', 'accept': 'video/mp4'},
+    });
+
+    expect(video.isFile, isTrue);
+    expect(video.isVideo, isTrue);
+    expect(legacyVideo.isFile, isTrue);
+    expect(legacyVideo.isVideo, isTrue);
+  });
+
+  testWidgets('video fields use the standard file handler', (tester) async {
+    dynamic latestData;
+
+    await tester.pumpWidget(
+      _TestApp(
+        form: JsonForm(
+          jsonSchema: json.encode(_schemaWithVideo),
+          initialData: const <String, dynamic>{},
+          onChanged: (data) => latestData = Map<String, dynamic>.from(data),
+          onFormDataSaved: (_) {},
+          fileHandler: () => {
+            'video': (_) async => [
+              SchemaFormFile(
+                name: 'selected.mp4',
+                value: 'stored-selected.mp4',
+                bytes: Uint8List(0),
+              ),
+            ],
+            '*': (_) async => const [],
+          },
+        ),
+      ),
+    );
+
+    expect(find.text('Record video'), findsNothing);
+
+    await tester.tap(find.text('Add File').last);
+    await tester.pumpAndSettle();
+
+    expect(latestData, {'video': 'stored-selected.mp4'});
+    expect(find.text('selected.mp4'), findsOneWidget);
+  });
+
   testWidgets('multiple file field appends new selections', (tester) async {
     var pickCount = 0;
     dynamic latestData;
@@ -223,6 +275,14 @@ const _schemaWithMultipleFiles = {
       'title': 'Files',
       'items': {'type': 'string', 'format': 'data-url'},
     },
+  },
+};
+
+const _schemaWithVideo = {
+  'type': 'object',
+  'properties': {
+    'photo': {'type': 'string', 'format': 'data-url', 'title': 'Photo'},
+    'video': {'type': 'string', 'format': 'video', 'title': 'Video'},
   },
 };
 

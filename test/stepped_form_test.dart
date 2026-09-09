@@ -55,6 +55,33 @@ const dependencyJsonSchema = '''
 }
 ''';
 
+const emailJsonSchema = '''
+{
+  "type": "object",
+  "required": ["email"],
+  "properties": {
+    "email": {"type": "string", "format": "email", "title": "Email"},
+    "next": {"type": "string", "title": "Next question"}
+  }
+}
+''';
+
+const requiredEnumJsonSchema = '''
+{
+  "type": "object",
+  "required": ["color"],
+  "properties": {
+    "color": {
+      "type": "string",
+      "title": "Favorite color",
+      "enum": ["red", "green"],
+      "enumNames": ["Red", "Green"]
+    },
+    "next": {"type": "string", "title": "Next question"}
+  }
+}
+''';
+
 /// enums render as radio lists in stepped mode — select by tapping the label
 Future<void> selectRadioValue(WidgetTester tester, String value) async {
   await tester.tap(find.text(value).last);
@@ -267,6 +294,62 @@ void main() {
       expect(find.text('Required'), findsOneWidget);
     });
 
+    testWidgets('email format blocks advancing with an invalid address', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildTestApp(
+          JsonForm(
+            jsonSchema: emailJsonSchema,
+            displayMode: JsonFormDisplayMode.stepped,
+            onFormDataSaved: (_) {},
+          ),
+        ),
+      );
+      await tester.pump();
+
+      await tester.enterText(find.byKey(const Key('email')), 'anything');
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('1 / 2'), findsOneWidget);
+      expect(find.text('Enter a valid email address'), findsOneWidget);
+
+      await tester.enterText(
+        find.byKey(const Key('email')),
+        'person@example.com',
+      );
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('2 / 2'), findsOneWidget);
+    });
+
+    testWidgets('required enum blocks advancing until a value is selected', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildTestApp(
+          JsonForm(
+            jsonSchema: requiredEnumJsonSchema,
+            displayMode: JsonFormDisplayMode.stepped,
+            onFormDataSaved: (_) {},
+          ),
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('1 / 2'), findsOneWidget);
+      expect(find.text('Required'), findsOneWidget);
+
+      await selectRadioValue(tester, 'Red');
+
+      expect(find.text('2 / 2'), findsOneWidget);
+    });
+
     testWidgets(
       'valid step advances, custom media builder renders custom types, '
       'and back navigation preserves state',
@@ -390,6 +473,49 @@ void main() {
       // review page: an icon for the file, never the raw data url
       expect(find.byIcon(Icons.insert_drive_file_outlined), findsOneWidget);
       expect(find.textContaining('base64'), findsNothing);
+    });
+
+    testWidgets('review step delegates file thumbnails to its builder', (
+      tester,
+    ) async {
+      const schema = '''
+      {
+        "type": "object",
+        "properties": {
+          "photo": {"type": "string", "format": "data-url", "title": "Photo"}
+        }
+      }
+      ''';
+      List<String>? reviewedValues;
+      await tester.pumpWidget(
+        buildTestApp(
+          JsonForm(
+            jsonSchema: schema,
+            displayMode: JsonFormDisplayMode.stepped,
+            steppedConfig: JsonFormSteppedConfig(
+              showReviewStep: true,
+              reviewFileBuilder: (context, property, values) {
+                reviewedValues = values;
+                return const SizedBox(
+                  key: Key('review-thumbnail'),
+                  width: 64,
+                  height: 64,
+                );
+              },
+            ),
+            fileHandler: () => {'*': (_) async => null},
+            initialData: const {'photo': 'data:image/png;base64,AAAA'},
+            onFormDataSaved: (_) {},
+          ),
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.text('Next'));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('review-thumbnail')), findsOneWidget);
+      expect(reviewedValues, ['data:image/png;base64,AAAA']);
     });
 
     testWidgets('review step lists answers and jumps back on tap', (

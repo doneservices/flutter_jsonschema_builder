@@ -1,6 +1,15 @@
 import '../models/models.dart';
 
-enum PropertyFormat { general, password, date, datetime, email, dataurl, uri }
+enum PropertyFormat {
+  general,
+  password,
+  date,
+  datetime,
+  email,
+  dataurl,
+  video,
+  uri,
+}
 
 PropertyFormat propertyFormatFromString(String? value) {
   switch (value) {
@@ -14,6 +23,8 @@ PropertyFormat propertyFormatFromString(String? value) {
       return PropertyFormat.email;
     case 'data-url':
       return PropertyFormat.dataurl;
+    case 'video':
+      return PropertyFormat.video;
     case 'uri':
       return PropertyFormat.uri;
     default:
@@ -124,6 +135,8 @@ class SchemaProperty extends Schema {
           ..required = required
           ..dependents = dependents
           ..isMultipleFile = isMultipleFile
+          ..fileType = fileType
+          ..acceptedFiles = acceptedFiles
           ..uiMedia = uiMedia
           ..uiGroup = uiGroup;
 
@@ -152,6 +165,17 @@ class SchemaProperty extends Schema {
   bool isMultipleFile = false;
   String? fileType;
   List<String>? acceptedFiles;
+
+  /// Whether this property is represented by one or more uploaded files.
+  bool get isFile =>
+      format == PropertyFormat.dataurl || format == PropertyFormat.video;
+
+  /// Whether the file field should accept or record video.
+  bool get isVideo =>
+      format == PropertyFormat.video ||
+      fileType?.toLowerCase().startsWith('video') == true ||
+      acceptedFiles?.any((type) => type.toLowerCase().startsWith('video')) ==
+          true;
 
   /// indica si sus dependentes han sido activados por XDependencies
   bool isDependentsActive = false;
@@ -222,13 +246,15 @@ class SchemaProperty extends Schema {
           if (!isGeneralPass) uiGroup = data.toString();
           break;
         case "ui:options":
-          fileType = data["fileType"];
-          acceptedFiles = data["accept"] != null
-              ? (data["accept"] as String)
-                    .split(',')
-                    .map((e) => e.trim())
-                    .toList()
-              : null;
+          if (data is Map) {
+            fileType = data["fileType"]?.toString();
+            final accept = data["accept"]?.toString();
+            acceptedFiles = accept
+                ?.split(',')
+                .map((e) => e.trim())
+                .where((e) => e.isNotEmpty)
+                .toList();
+          }
           break;
         default:
           break;
