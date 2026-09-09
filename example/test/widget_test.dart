@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_jsonschema_builder/flutter_jsonschema_builder.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:example/demo_file_handling.dart';
 import 'package:example/main.dart';
 
 void main() {
@@ -114,7 +115,10 @@ void main() {
     });
     final video = SchemaProperty.fromJson('video', {
       'type': 'string',
-      'format': 'video',
+      'format': 'data-url',
+    });
+    video.setUi({
+      'ui:options': {'fileType': 'video'},
     });
 
     await tester.pumpWidget(

@@ -27,24 +27,33 @@ flutter packages get
 
 See the [File Picker Installation](https://github.com/miguelpruivo/plugins_flutter_file_picker) for file fields.
 
-### Video fields
+### File fields
 
-Video questions use the same `SchemaFormFile` value as other file questions:
+Use `data-url` for files and describe the media type in the UI schema:
 
 ```json
 "video": {
   "type": "string",
-  "format": "video",
+  "format": "data-url",
   "title": "Video answer"
 }
 ```
 
-The existing `data-url` format also works when its UI options contain
-`"fileType": "video"`. The package remains picker-agnostic: use the existing
-`fileHandler` to present whichever sources your app supports. For example, an
-app can show one source menu and then use `image_picker` for camera/photo
-library or `file_picker` for the Files app. The example demonstrates the same
-three-source flow for images and videos.
+```json
+"video": {
+  "ui:options": {
+    "fileType": "video",
+    "accept": ".mp4,.mov,.m4v"
+  }
+}
+```
+
+The package handles form state but leaves picking and storage to the app.
+Provide a `fileHandler` that returns `SchemaFormFile` objects: `name` is shown
+to the user, `value` is saved in the form data, and `bytes` can be used for a
+preview or upload. The example's compact adapter shows camera, photo-library,
+Files, and preview handling in
+[`demo_file_handling.dart`](example/lib/demo_file_handling.dart).
 
 ## Usage
 
