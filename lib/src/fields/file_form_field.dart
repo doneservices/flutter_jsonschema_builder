@@ -20,9 +20,9 @@ class FileJFormField extends PropertyFieldWidget<dynamic> {
   });
 
   final Future<List<SchemaFormFile>?> Function(SchemaProperty property)
-      fileHandler;
+  fileHandler;
   final Future<List<SchemaFormFile>?> Function(dynamic initialValue)?
-      initialFileValueHandler;
+  initialFileValueHandler;
 
   @override
   State<FileJFormField> createState() => _FileJFormFieldState();
@@ -123,7 +123,8 @@ class _FileJFormFieldState extends State<FileJFormField> {
   }
 
   Future<void> _triggerInitialValue() async {
-    final shouldTrigger = !hasTriggeredInitialValue &&
+    final shouldTrigger =
+        !hasTriggeredInitialValue &&
         widget.initialFileValueHandler != null &&
         widget.property.defaultValue != null;
     if (shouldTrigger) {

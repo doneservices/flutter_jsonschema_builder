@@ -5,7 +5,9 @@ class DefaultTextInputJsonFormatter extends TextInputFormatter {
   DefaultTextInputJsonFormatter({this.pattern});
   @override
   TextEditingValue formatEditUpdate(
-      TextEditingValue oldValue, TextEditingValue newValue) {
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
     // TODO: implement formatEditUpdate
     if (oldValue.text.length >= newValue.text.length) {
       return newValue;
@@ -22,7 +24,9 @@ class DefaultTextInputJsonFormatter extends TextInputFormatter {
     }
 
     return newValue.copyWith(
-        text: newValue.text, selection: updateCursorPosition(newValue.text));
+      text: newValue.text,
+      selection: updateCursorPosition(newValue.text),
+    );
   }
 
   TextSelection updateCursorPosition(String text) {

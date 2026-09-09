@@ -4,9 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 
 /// Builds a [TextEditingValue] with the caret collapsed at the end of [text].
 TextEditingValue _value(String text) => TextEditingValue(
-      text: text,
-      selection: TextSelection.collapsed(offset: text.length),
-    );
+  text: text,
+  selection: TextSelection.collapsed(offset: text.length),
+);
 
 void main() {
   group('DefaultTextInputJsonFormatter without a pattern', () {

@@ -34,7 +34,7 @@ class _DropDownJFormFieldState extends State<DropDownJFormField> {
         default:
           widget.property.enumm =
               widget.property.enumNames?.map((e) => e.toString()).toList() ??
-                  [];
+              [];
       }
     }
 
@@ -84,17 +84,16 @@ class _DropDownJFormFieldState extends State<DropDownJFormField> {
               onChanged: _onChanged,
               onSaved: widget.onSaved,
               style: widget.property.readOnly
-                  ? Theme.of(context)
-                      .textTheme
-                      .titleMedium!
-                      .apply(color: Colors.grey)
+                  ? Theme.of(
+                      context,
+                    ).textTheme.titleMedium!.apply(color: Colors.grey)
                   : Theme.of(context).textTheme.titleMedium,
-              decoration: widget.decoration ??
+              decoration:
+                  widget.decoration ??
                   InputDecoration(
-                    errorStyle: Theme.of(context)
-                        .textTheme
-                        .bodyMedium!
-                        .apply(color: Theme.of(context).colorScheme.error),
+                    errorStyle: Theme.of(context).textTheme.bodyMedium!.apply(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
                   ),
             ),
           ),
@@ -125,12 +124,7 @@ class _DropDownJFormFieldState extends State<DropDownJFormField> {
     for (var i = 0; i < widget.property.enumm!.length; i++) {
       final value = widget.property.enumm![i];
       final text = widget.property.enumNames?[i] ?? value;
-      w.add(
-        DropdownMenuItem(
-          value: value,
-          child: Text(text.toString()),
-        ),
-      );
+      w.add(DropdownMenuItem(value: value, child: Text(text.toString())));
     }
     return w;
   }

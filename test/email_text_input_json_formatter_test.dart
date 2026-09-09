@@ -4,9 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 
 /// Builds a [TextEditingValue] with the caret collapsed at the end of [text].
 TextEditingValue _value(String text) => TextEditingValue(
-      text: text,
-      selection: TextSelection.collapsed(offset: text.length),
-    );
+  text: text,
+  selection: TextSelection.collapsed(offset: text.length),
+);
 
 void main() {
   late EmailTextInputJsonFormatter formatter;
@@ -26,17 +26,24 @@ void main() {
       var current = '';
       for (var i = 0; i < email.length; i++) {
         final next = email.substring(0, i + 1);
-        final result =
-            formatter.formatEditUpdate(_value(current), _value(next));
-        expect(result.text, next,
-            reason: 'expected "$next" to be accepted while typing');
+        final result = formatter.formatEditUpdate(
+          _value(current),
+          _value(next),
+        );
+        expect(
+          result.text,
+          next,
+          reason: 'expected "$next" to be accepted while typing',
+        );
         current = result.text;
       }
     });
 
     test('accepts a single @', () {
-      final result =
-          formatter.formatEditUpdate(_value('john'), _value('john@'));
+      final result = formatter.formatEditUpdate(
+        _value('john'),
+        _value('john@'),
+      );
       expect(result.text, 'john@');
     });
 
@@ -66,8 +73,7 @@ void main() {
     });
 
     test('rejects a second @', () {
-      final result =
-          formatter.formatEditUpdate(_value('a@b'), _value('a@b@'));
+      final result = formatter.formatEditUpdate(_value('a@b'), _value('a@b@'));
       expect(result.text, 'a@b');
     });
 
@@ -92,8 +98,7 @@ void main() {
     });
 
     test('pure deletion of a middle range passes through', () {
-      final result =
-          formatter.formatEditUpdate(_value('abcde'), _value('ae'));
+      final result = formatter.formatEditUpdate(_value('abcde'), _value('ae'));
       expect(result.text, 'ae');
     });
 
@@ -112,8 +117,7 @@ void main() {
     test('a shrinking selection-replace is still validated', () {
       // Replacing all of "abcdef" with "@@" shrinks the text but is not a
       // pure deletion, so the two-@ rule still rejects it.
-      final result =
-          formatter.formatEditUpdate(_value('abcdef'), _value('@@'));
+      final result = formatter.formatEditUpdate(_value('abcdef'), _value('@@'));
       expect(result.text, 'abcdef');
     });
   });

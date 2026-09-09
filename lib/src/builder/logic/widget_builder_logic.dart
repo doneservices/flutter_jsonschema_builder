@@ -18,7 +18,7 @@ class WidgetBuilderInherited extends InheritedWidget {
     this.inputDecoration,
     this.displayMode = JsonFormDisplayMode.fullForm,
     Map<String, dynamic>? initialData,
-  })  : data = initialData ?? {};
+  }) : data = initialData ?? {};
 
   final Schema mainSchema;
   final JsonFormDisplayMode displayMode;
@@ -33,7 +33,9 @@ class WidgetBuilderInherited extends InheritedWidget {
   final InputDecoration? inputDecoration;
 
   void setJsonFormSchemaStyle(
-      BuildContext context, JsonFormSchemaUiConfig? uiConfig) {
+    BuildContext context,
+    JsonFormSchemaUiConfig? uiConfig,
+  ) {
     this.uiConfig = JsonFormSchemaUiConfig(
       titleAlign: uiConfig?.titleAlign ?? TextAlign.center,
       selectionTitle: uiConfig?.selectionTitle,
@@ -102,8 +104,8 @@ class WidgetBuilderInherited extends InheritedWidget {
       mainSchema != oldWidget.mainSchema;
 
   static WidgetBuilderInherited of(BuildContext context) {
-    final result =
-        context.dependOnInheritedWidgetOfExactType<WidgetBuilderInherited>();
+    final result = context
+        .dependOnInheritedWidgetOfExactType<WidgetBuilderInherited>();
 
     assert(result != null, 'No WidgetBuilderInherited found in context');
     return result!;

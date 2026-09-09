@@ -20,8 +20,9 @@ class FieldHeader extends StatelessWidget {
     final isStepped = SteppedFormScope.maybeOf(context) != null;
 
     final titleStyle = isStepped ? textTheme.titleSmall : textTheme.bodyMedium;
-    final descriptionStyle =
-        isStepped ? textTheme.bodyMedium : textTheme.bodySmall;
+    final descriptionStyle = isStepped
+        ? textTheme.bodyMedium
+        : textTheme.bodySmall;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -33,10 +34,7 @@ class FieldHeader extends StatelessWidget {
           ),
         if (description != null && description.isNotEmpty) ...[
           const SizedBox(height: 4),
-          Text(
-            description,
-            style: descriptionStyle,
-          ),
+          Text(description, style: descriptionStyle),
         ],
         if (isStepped) const SizedBox(height: 12),
       ],

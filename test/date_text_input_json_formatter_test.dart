@@ -4,9 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 
 /// Builds a [TextEditingValue] with the caret collapsed at the end of [text].
 TextEditingValue _value(String text) => TextEditingValue(
-      text: text,
-      selection: TextSelection.collapsed(offset: text.length),
-    );
+  text: text,
+  selection: TextSelection.collapsed(offset: text.length),
+);
 
 void main() {
   late DateTextInputJsonFormatter formatter;
@@ -37,14 +37,15 @@ void main() {
     });
 
     test('appends the second separator after the fourth digit', () {
-      final result =
-          formatter.formatEditUpdate(_value('12-0'), _value('12-01'));
+      final result = formatter.formatEditUpdate(
+        _value('12-0'),
+        _value('12-01'),
+      );
       expect(result.text, '12-01-');
     });
 
     test('accepts input that already contains separators', () {
-      final result =
-          formatter.formatEditUpdate(_value('12-'), _value('12-0'));
+      final result = formatter.formatEditUpdate(_value('12-'), _value('12-0'));
       expect(result.text, '12-0');
     });
 
@@ -74,8 +75,7 @@ void main() {
       // reformatted length is 3 and the length-2 day check never runs). The
       // day is only re-validated at length 4, once the month tens digit is
       // present — that is where "35" is finally rejected.
-      final result =
-          formatter.formatEditUpdate(_value('35-'), _value('35-0'));
+      final result = formatter.formatEditUpdate(_value('35-'), _value('35-0'));
       expect(result.text, '35-');
     });
 
@@ -90,14 +90,12 @@ void main() {
 
   group('DateTextInputJsonFormatter deletions', () {
     test('deleting a trailing character passes through unchanged', () {
-      final result =
-          formatter.formatEditUpdate(_value('12-3'), _value('12-'));
+      final result = formatter.formatEditUpdate(_value('12-3'), _value('12-'));
       expect(result.text, '12-');
     });
 
     test('clearing the field passes through', () {
-      final result =
-          formatter.formatEditUpdate(_value('12-01'), _value(''));
+      final result = formatter.formatEditUpdate(_value('12-01'), _value(''));
       expect(result.text, '');
     });
 

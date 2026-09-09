@@ -63,10 +63,9 @@ class _DateJFormFieldState extends State<DateJFormField> {
           // inputFormatters: [DateTextInputJsonFormatter()],
           readOnly: widget.property.readOnly,
           style: widget.property.readOnly
-              ? Theme.of(context)
-                  .textTheme
-                  .titleMedium!
-                  .apply(color: Colors.grey)
+              ? Theme.of(
+                  context,
+                ).textTheme.titleMedium!.apply(color: Colors.grey)
               : Theme.of(context).textTheme.titleMedium,
 
           onSaved: (value) {
@@ -82,10 +81,12 @@ class _DateJFormFieldState extends State<DateJFormField> {
               return;
             }
           },
-          decoration: widget.decoration ??
+          decoration:
+              widget.decoration ??
               InputDecoration(
                 hintText: dateFormatString.toUpperCase(),
-                helperText: widget.property.help != null &&
+                helperText:
+                    widget.property.help != null &&
                         widget.property.help!.isNotEmpty
                     ? widget.property.help
                     : null,
@@ -93,10 +94,9 @@ class _DateJFormFieldState extends State<DateJFormField> {
                   icon: const Icon(Icons.date_range_outlined),
                   onPressed: widget.property.readOnly ? null : _openCalendar,
                 ),
-                errorStyle: Theme.of(context)
-                    .textTheme
-                    .bodyMedium!
-                    .apply(color: Theme.of(context).colorScheme.error),
+                errorStyle: Theme.of(context).textTheme.bodyMedium!.apply(
+                  color: Theme.of(context).colorScheme.error,
+                ),
               ),
         ),
       ],

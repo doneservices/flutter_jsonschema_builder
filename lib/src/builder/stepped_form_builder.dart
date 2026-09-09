@@ -102,10 +102,9 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
       final currentId = _pageId(_currentPage);
       _steps = extractJsonFormSteps(widget.mainSchema);
 
-      var newPage =
-          currentId == _reviewPageId
-              ? _pageCount - 1
-              : _steps.indexWhere((step) => step.id == currentId);
+      var newPage = currentId == _reviewPageId
+          ? _pageCount - 1
+          : _steps.indexWhere((step) => step.id == currentId);
       // the current step may have been removed — or every step (clamping
       // against an empty page range would throw)
       if (newPage < 0) {
@@ -313,27 +312,25 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
                     child: Text(
                       widget.mainSchema.title,
                       style: Theme.of(context).textTheme.titleMedium,
-                      textAlign:
-                          WidgetBuilderInherited.of(
-                            context,
-                          ).uiConfig.titleAlign,
+                      textAlign: WidgetBuilderInherited.of(
+                        context,
+                      ).uiConfig.titleAlign,
                     ),
                   ),
                 Padding(
                   padding: const EdgeInsets.only(bottom: 12),
-                  child:
-                      config.progressBuilder != null
-                          ? config.progressBuilder!(
-                            context,
-                            _currentPage + 1,
-                            totalPages,
-                          )
-                          : JsonFormStepProgress(
-                            currentStep: _currentPage + 1,
-                            totalSteps: totalPages,
-                            duration: config.transitionDuration,
-                            curve: config.transitionCurve,
-                          ),
+                  child: config.progressBuilder != null
+                      ? config.progressBuilder!(
+                          context,
+                          _currentPage + 1,
+                          totalPages,
+                        )
+                      : JsonFormStepProgress(
+                          currentStep: _currentPage + 1,
+                          totalSteps: totalPages,
+                          duration: config.transitionDuration,
+                          curve: config.transitionCurve,
+                        ),
                 ),
                 // the controls float on top of the page content instead of
                 // stacking below it, so the page keeps the full height — which
@@ -571,12 +568,11 @@ class _ReviewPage extends StatelessWidget {
     final isFileField =
         schema is SchemaProperty && schema.format == PropertyFormat.dataurl;
     if (isFileField) {
-      final count =
-          value == null || (value is List && value.isEmpty)
-              ? 0
-              : value is List
-              ? value.length
-              : 1;
+      final count = value == null || (value is List && value.isEmpty)
+          ? 0
+          : value is List
+          ? value.length
+          : 1;
       if (count == 0) return const Text('—');
       return Row(
         children: [
@@ -645,26 +641,24 @@ class _StepControls extends StatelessWidget {
 
     Widget nextButton;
     if (isLastPage) {
-      nextButton =
-          uiConfig.submitButtonBuilder != null
-              ? uiConfig.submitButtonBuilder!(onSubmit)
-              : ElevatedButton(
-                onPressed: onSubmit,
-                child: Text(config.submitButtonText),
-              );
+      nextButton = uiConfig.submitButtonBuilder != null
+          ? uiConfig.submitButtonBuilder!(onSubmit)
+          : ElevatedButton(
+              onPressed: onSubmit,
+              child: Text(config.submitButtonText),
+            );
     } else {
-      nextButton =
-          config.nextButtonBuilder != null
-              ? config.nextButtonBuilder!(onNext)
-              : ElevatedButton.icon(
-                onPressed: onNext,
-                icon: Icon(
-                  isVertical
-                      ? Icons.keyboard_arrow_down
-                      : Icons.keyboard_arrow_right,
-                ),
-                label: Text(config.nextButtonText),
-              );
+      nextButton = config.nextButtonBuilder != null
+          ? config.nextButtonBuilder!(onNext)
+          : ElevatedButton.icon(
+              onPressed: onNext,
+              icon: Icon(
+                isVertical
+                    ? Icons.keyboard_arrow_down
+                    : Icons.keyboard_arrow_right,
+              ),
+              label: Text(config.nextButtonText),
+            );
     }
 
     return Row(
@@ -677,19 +671,20 @@ class _StepControls extends StatelessWidget {
               // an opaque background so it stays legible over anything the
               // page scrolls underneath it
               : TextButton.icon(
-                onPressed: onBack,
-                style: TextButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.surface,
-                  foregroundColor:
-                      Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-                icon: Icon(
-                  isVertical
-                      ? Icons.keyboard_arrow_up
-                      : Icons.keyboard_arrow_left,
-                ),
-                label: Text(config.backButtonText),
-              )
+                  onPressed: onBack,
+                  style: TextButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.surface,
+                    foregroundColor: Theme.of(
+                      context,
+                    ).colorScheme.onSurfaceVariant,
+                  ),
+                  icon: Icon(
+                    isVertical
+                        ? Icons.keyboard_arrow_up
+                        : Icons.keyboard_arrow_left,
+                  ),
+                  label: Text(config.backButtonText),
+                )
         else
           const SizedBox.shrink(),
         nextButton,

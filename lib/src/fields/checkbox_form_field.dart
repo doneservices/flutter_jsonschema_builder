@@ -64,23 +64,21 @@ class _CheckboxJFormFieldState extends State<CheckboxJFormField> {
                   title: Text(
                     '${widget.property.title}'
                     '${widget.property.required ? " *" : ""}',
-                    style:
-                        widget.property.readOnly
-                            ? Theme.of(
-                              context,
-                            ).textTheme.titleMedium!.apply(color: Colors.grey)
-                            : Theme.of(context).textTheme.titleMedium,
+                    style: widget.property.readOnly
+                        ? Theme.of(
+                            context,
+                          ).textTheme.titleMedium!.apply(color: Colors.grey)
+                        : Theme.of(context).textTheme.titleMedium,
                   ),
                   controlAffinity: ListTileControlAffinity.leading,
-                  onChanged:
-                      widget.property.readOnly
-                          ? null
-                          : (bool? value) {
-                            field.didChange(value);
-                            if (widget.onChanged != null && value != null) {
-                              widget.onChanged!(value);
-                            }
-                          },
+                  onChanged: widget.property.readOnly
+                      ? null
+                      : (bool? value) {
+                          field.didChange(value);
+                          if (widget.onChanged != null && value != null) {
+                            widget.onChanged!(value);
+                          }
+                        },
                 ),
                 if (field.hasError) CustomErrorText(text: field.errorText!),
               ],

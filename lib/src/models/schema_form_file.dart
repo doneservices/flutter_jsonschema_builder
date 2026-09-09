@@ -19,11 +19,7 @@ class SchemaFormFile {
   /// The bytes of the file, used for cosmetic reasons when displaying previews
   Uint8List bytes;
 
-  SchemaFormFile copyWith({
-    String? name,
-    String? value,
-    Uint8List? bytes,
-  }) {
+  SchemaFormFile copyWith({String? name, String? value, Uint8List? bytes}) {
     return SchemaFormFile(
       name: name ?? this.name,
       value: value ?? this.value,

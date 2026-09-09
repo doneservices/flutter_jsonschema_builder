@@ -56,14 +56,16 @@ List<JsonFormStep> extractJsonFormSteps(SchemaObject root) {
       final schemas = child.properties ?? const <Schema>[];
       if (schemas.isEmpty) continue;
 
-      steps.add(JsonFormStep(
-        id: uniqueId(child.idKey),
-        parent: child,
-        schemas: List.of(schemas),
-        title: child.title != kNoTitle ? child.title : null,
-        description: child.description,
-        media: child.uiMedia,
-      ));
+      steps.add(
+        JsonFormStep(
+          id: uniqueId(child.idKey),
+          parent: child,
+          schemas: List.of(schemas),
+          title: child.title != kNoTitle ? child.title : null,
+          description: child.description,
+          media: child.uiMedia,
+        ),
+      );
     } else {
       final group = child.uiGroup;
       final existing = group != null ? groupSteps[group] : null;

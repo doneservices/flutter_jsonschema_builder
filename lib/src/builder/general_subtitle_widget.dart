@@ -20,17 +20,11 @@ class GeneralSubtitle extends StatelessWidget {
       children: [
         const SizedBox(height: 25),
         if (mainSchemaTitle != title && title != kNoTitle) ...[
-          Text(
-            title,
-            style: Theme.of(context).textTheme.titleSmall,
-          ),
-          const Divider()
+          Text(title, style: Theme.of(context).textTheme.titleSmall),
+          const Divider(),
         ],
         if (description != null && description != nainSchemaDescription)
-          Text(
-            description!,
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
+          Text(description!, style: Theme.of(context).textTheme.bodySmall),
       ],
     );
   }
