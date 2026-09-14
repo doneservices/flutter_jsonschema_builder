@@ -386,8 +386,9 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
                       ),
                       Align(
                         alignment: Alignment.bottomCenter,
-                        child: KeyedSubtree(
+                        child: SafeArea(
                           key: _controlsKey,
+                          top: false,
                           child: _StepControls(
                             config: config,
                             isFirstPage: _currentPage == 0,
