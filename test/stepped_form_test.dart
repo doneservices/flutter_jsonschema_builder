@@ -642,6 +642,34 @@ void main() {
       expect(nextRect.bottom, lessThanOrEqualTo(pageRect.bottom));
     });
 
+    testWidgets('navigation controls stay above the system bottom inset', (
+      tester,
+    ) async {
+      const bottomInset = 48.0;
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(
+            size: Size(800, 600),
+            padding: EdgeInsets.only(bottom: bottomInset),
+            viewPadding: EdgeInsets.only(bottom: bottomInset),
+          ),
+          child: buildTestApp(
+            JsonForm(
+              jsonSchema: testJsonSchema,
+              displayMode: JsonFormDisplayMode.stepped,
+              onFormDataSaved: (_) {},
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final nextRect = tester.getRect(
+        find.widgetWithText(ElevatedButton, 'Next'),
+      );
+      expect(nextRect.bottom, lessThanOrEqualTo(600 - bottomInset));
+    });
+
     testWidgets(
       'scroll clearance follows the measured height of custom controls',
       (tester) async {
