@@ -300,7 +300,7 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
           onTextSubmitted: _onTextSubmitted,
           controlsClearance: _controlsClearance,
           child: Padding(
-            padding: widget.padding,
+            padding: widget.padding.copyWith(bottom: widget.padding.bottom / 2),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -308,13 +308,11 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
                 // since here it stays visible on every step
                 if (widget.showTitle && widget.mainSchema.title != kNoTitle)
                   Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.only(bottom: 4),
                     child: Text(
                       widget.mainSchema.title,
                       style: Theme.of(context).textTheme.titleMedium,
-                      textAlign: WidgetBuilderInherited.of(
-                        context,
-                      ).uiConfig.titleAlign,
+                      textAlign: TextAlign.center,
                     ),
                   ),
                 Padding(
