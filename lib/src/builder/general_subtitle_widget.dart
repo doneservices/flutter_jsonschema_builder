@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_jsonschema_builder/src/builder/description_widget.dart';
 import 'package:flutter_jsonschema_builder/src/models/models.dart';
 
 class GeneralSubtitle extends StatelessWidget {
@@ -23,8 +24,15 @@ class GeneralSubtitle extends StatelessWidget {
           Text(title, style: Theme.of(context).textTheme.titleSmall),
           const Divider(),
         ],
-        if (description != null && description != nainSchemaDescription)
-          Text(description!, style: Theme.of(context).textTheme.bodySmall),
+        if (description != null &&
+            description!.isNotEmpty &&
+            description != nainSchemaDescription) ...[
+          Description(
+            text: description!,
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 8),
+        ],
       ],
     );
   }
