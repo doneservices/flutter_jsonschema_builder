@@ -108,8 +108,20 @@ Widget build(BuildContext context) {
 Question `description` values support Markdown in both full-form and stepped
 mode, including **bold**, *italic*, and lists. UI schema `ui:description`
 overrides support the same formatting.
-Markdown links such as `[Flutter](https://flutter.dev)` open when tapped.
-Supported link schemes are `https`, `http`, `mailto`, `tel`, and `sms`.
+Register `JsonForm.onLinkTap` to handle Markdown links:
+
+```dart
+JsonForm(
+  jsonSchema: jsonSchema,
+  onFormDataSaved: (data) {},
+  onLinkTap: (text, href, title) {
+    // Navigate, open a browser, or handle an app-specific link here.
+  },
+)
+```
+
+Without a callback, links have no tap action. The app decides which URLs to
+accept and how to handle errors. Only the demo depends on `url_launcher`.
 
 ```json
 "firstName": {

@@ -40,6 +40,9 @@ typedef CustomPickerHandler =
 typedef CustomValidatorHandler =
     Map<String, String? Function(dynamic)?> Function();
 
+typedef JsonFormLinkTapCallback =
+    void Function(String text, String? href, String title);
+
 class JsonForm extends StatefulWidget {
   const JsonForm({
     super.key,
@@ -53,6 +56,7 @@ class JsonForm extends StatefulWidget {
     this.customPickerHandler,
     this.customValidatorHandler,
     this.onChanged,
+    this.onLinkTap,
     this.initialData,
     this.padding = const EdgeInsets.all(16),
     this.inputDecoration,
@@ -60,6 +64,11 @@ class JsonForm extends StatefulWidget {
     this.steppedConfig = const JsonFormSteppedConfig(),
     this.showTitle = true,
   });
+
+  /// Called when a Markdown description link is tapped.
+  /// The app owns navigation, URL validation, and error handling.
+  /// When omitted, links have no tap action.
+  final JsonFormLinkTapCallback? onLinkTap;
 
   final String jsonSchema;
   final void Function(dynamic) onFormDataSaved;
@@ -153,6 +162,7 @@ class _JsonFormState extends State<JsonForm> {
       customPickerHandler: widget.customPickerHandler,
       customValidatorHandler: widget.customValidatorHandler,
       onChanged: widget.onChanged,
+      onLinkTap: widget.onLinkTap,
       initialData: _formData,
       inputDecoration: widget.inputDecoration,
       displayMode: widget.displayMode,
