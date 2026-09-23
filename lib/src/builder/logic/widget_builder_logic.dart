@@ -15,6 +15,7 @@ class WidgetBuilderInherited extends InheritedWidget {
     this.customPickerHandler,
     this.customValidatorHandler,
     this.onChanged,
+    this.onLinkTap,
     this.inputDecoration,
     this.displayMode = JsonFormDisplayMode.fullForm,
     Map<String, dynamic>? initialData,
@@ -29,6 +30,7 @@ class WidgetBuilderInherited extends InheritedWidget {
   final CustomPickerHandler? customPickerHandler;
   final CustomValidatorHandler? customValidatorHandler;
   final ValueChanged<dynamic>? onChanged;
+  final JsonFormLinkTapCallback? onLinkTap;
   late final JsonFormSchemaUiConfig uiConfig;
   final InputDecoration? inputDecoration;
 
@@ -101,7 +103,7 @@ class WidgetBuilderInherited extends InheritedWidget {
 
   @override
   bool updateShouldNotify(covariant WidgetBuilderInherited oldWidget) =>
-      mainSchema != oldWidget.mainSchema;
+      mainSchema != oldWidget.mainSchema || onLinkTap != oldWidget.onLinkTap;
 
   static WidgetBuilderInherited of(BuildContext context) {
     final result = context

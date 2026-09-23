@@ -1,20 +1,11 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_jsonschema_builder/flutter_jsonschema_builder.dart';
-import 'package:flutter_jsonschema_builder/src/builder/field_header_widget.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  const channel = MethodChannel('plugins.flutter.io/url_launcher');
-  TestWidgetsFlutterBinding.ensureInitialized();
-  tearDown(() {
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(channel, null);
-  });
-
   for (final mode in JsonFormDisplayMode.values) {
     for (final (fieldType, useUiOverride) in [
       ('string', false),
@@ -27,14 +18,8 @@ void main() {
         (tester) async {
           const description =
               '**Bold** and *italic*.\n\n- First\n- Second\n\n'
-              '[Learn more](https://flutter.dev)';
-          final launches = <String>[];
-          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-              .setMockMethodCallHandler(channel, (call) async {
-                expect(call.method, 'launch');
-                launches.add(call.arguments['url'] as String);
-                return true;
-              });
+              '[Learn more](app://help "Help title")';
+          final taps = <(String, String?, String)>[];
           final theme = ThemeData();
           await tester.pumpWidget(
             MaterialApp(
@@ -42,6 +27,8 @@ void main() {
               home: Scaffold(
                 body: JsonForm(
                   displayMode: mode,
+                  onLinkTap: (text, href, title) =>
+                      taps.add((text, href, title)),
                   jsonSchema: jsonEncode({
                     'type': 'object',
                     'properties': {
@@ -87,7 +74,7 @@ void main() {
           );
           await tester.tap(find.text('Learn more', findRichText: true));
           await tester.pump();
-          expect(launches, ['https://flutter.dev']);
+          expect(taps, [('Learn more', 'app://help', 'Help title')]);
           final markdown = tester.widget<MarkdownBody>(
             find.byType(MarkdownBody),
           );
@@ -106,46 +93,30 @@ void main() {
     }
   }
 
-  for (final failure in [
-    'unavailable',
-    'platform error',
-    'missing plugin',
-    'unsupported scheme',
-  ]) {
-    testWidgets('Link feedback for $failure', (tester) async {
-      var launches = 0;
-      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(channel, (call) async {
-            launches++;
-            if (failure == 'missing plugin') {
-              throw MissingPluginException();
-            }
-            if (failure == 'platform error') {
-              throw PlatformException(code: 'launch_failed');
-            }
-            return false;
-          });
-      final url = failure == 'unsupported scheme'
-          ? 'file:///tmp/example.txt'
-          : 'https://flutter.dev';
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: FieldHeader(
-              property: SchemaProperty.fromJson('answer', {
-                'type': 'string',
-                'title': 'Question',
-                'description': '[Learn more]($url)',
-              }),
-            ),
+  testWidgets('Links do nothing when no callback is registered', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: JsonForm(
+            jsonSchema: jsonEncode({
+              'type': 'object',
+              'properties': {
+                'answer': {
+                  'type': 'string',
+                  'description': '[Learn more](https://flutter.dev)',
+                },
+              },
+            }),
+            onFormDataSaved: (_) {},
           ),
         ),
-      );
-      await tester.tap(find.text('Learn more', findRichText: true));
-      await tester.pumpAndSettle();
-      expect(find.text('Could not open this link.'), findsOneWidget);
-      expect(launches, failure == 'unsupported scheme' ? 0 : 1);
-      expect(tester.takeException(), isNull);
-    });
-  }
+      ),
+    );
+    await tester.tap(find.text('Learn more', findRichText: true));
+    await tester.pump();
+    expect(find.byType(SnackBar), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
 }

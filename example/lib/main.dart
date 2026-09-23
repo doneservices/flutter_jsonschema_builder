@@ -1,6 +1,8 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_jsonschema_builder/flutter_jsonschema_builder.dart';
 import 'package:lottie/lottie.dart';
 
@@ -238,6 +240,7 @@ class _DemoHomePageState extends State<DemoHomePage> {
           return null;
         },
       ),
+      onLinkTap: (_, href, _) => _openLink(context, href),
       onFormDataSaved: _showResult,
     );
   }
@@ -251,9 +254,29 @@ class _DemoHomePageState extends State<DemoHomePage> {
         fileHandler:
             () => {'*': (property) => pickDemoFiles(context, property)},
         jsonFormSchemaUiConfig: buildDemoFileUiConfig(),
+        onLinkTap: (_, href, _) => _openLink(context, href),
         onFormDataSaved: _showResult,
       ),
     );
+  }
+
+  Future<void> _openLink(BuildContext context, String? href) async {
+    final uri = Uri.tryParse(href ?? '');
+    if (uri != null &&
+        const ['https', 'http', 'mailto', 'tel', 'sms'].contains(uri.scheme)) {
+      try {
+        if (await launchUrl(uri)) return;
+      } on PlatformException catch (_) {
+        // Show the same feedback as when no application can handle the link.
+      } on MissingPluginException catch (_) {
+        // A plugin added during development needs a fresh app run.
+      }
+    }
+    if (context.mounted) {
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        const SnackBar(content: Text('Could not open this link.')),
+      );
+    }
   }
 
   void _showResult(dynamic data) {
