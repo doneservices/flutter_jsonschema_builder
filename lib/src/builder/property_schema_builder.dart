@@ -13,6 +13,7 @@ import 'package:flutter_jsonschema_builder/src/fields/dropdown_oneof_form_field.
 import 'package:flutter_jsonschema_builder/src/models/models.dart';
 import 'package:flutter_jsonschema_builder/src/models/one_of_model.dart';
 import 'package:flutter_jsonschema_builder/src/utils/date_text_input_json_formatter.dart';
+import 'package:flutter_jsonschema_builder/src/utils/input_validation_json_schema.dart';
 import 'package:intl/intl.dart';
 
 class PropertySchemaBuilder extends StatelessWidget {
@@ -32,6 +33,8 @@ class PropertySchemaBuilder extends StatelessWidget {
   Widget build(BuildContext context) {
     Widget field = const SizedBox.shrink();
     final widgetBuilderInherited = WidgetBuilderInherited.of(context);
+    final customBuilder =
+        widgetBuilderInherited.fieldBuilders[schemaProperty.widget];
 
     // sort
     final schemaPropertySorted = schemaProperty;
@@ -48,7 +51,59 @@ class PropertySchemaBuilder extends StatelessWidget {
             schemaProperty.widget == null &&
             widgetBuilderInherited.displayMode == JsonFormDisplayMode.stepped);
 
-    if (useRadio) {
+    if (customBuilder != null) {
+      field = FormField<dynamic>(
+        initialValue: schemaProperty.defaultValue,
+        autovalidateMode: AutovalidateMode.onUserInteraction,
+        onSaved: (value) => updateData(context, value),
+        validator: (value) {
+          if (schemaProperty.type == SchemaType.string) {
+            if (value != null && value is! String) return 'Expected text';
+            final error = inputValidationJsonSchema(
+              newValue: value as String? ?? '',
+              property: schemaProperty,
+            );
+            if (error == 'Required') {
+              return widgetBuilderInherited.uiConfig.requiredText ?? error;
+            }
+            if (error != null) return error;
+          } else if (schemaProperty.required &&
+              (value == null ||
+                  value == '' ||
+                  value is List && value.isEmpty)) {
+            return widgetBuilderInherited.uiConfig.requiredText ?? 'Required';
+          }
+          return _getCustomValidator(
+            context,
+            schemaProperty.idKey,
+          )?.call(value);
+        },
+        builder: (state) => customBuilder(
+          context,
+          schemaProperty,
+          state.value,
+          state.errorText,
+          (value) {
+            state.didChange(value);
+            if (schemaProperty.type == SchemaType.string &&
+                schemaProperty.enumm == null) {
+              dispatchStringEventToParent(context, value?.toString() ?? '');
+            } else if (schemaProperty.type == SchemaType.boolean &&
+                schemaProperty.enumm == null) {
+              dispatchBooleanEventToParent(context, value == true);
+            } else {
+              dispatchSelectedForDropDownEventToParent(
+                context,
+                value,
+                id: schemaProperty.id,
+              );
+            }
+            updateData(context, value);
+            widgetBuilderInherited.notifyChanges();
+          },
+        ),
+      );
+    } else if (useRadio) {
       field = RadioButtonJFormField(
         property: schemaPropertySorted,
         onChanged: (value) {

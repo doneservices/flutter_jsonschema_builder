@@ -173,6 +173,49 @@ final uiSchema = '''
 ```
 <img width="348" alt="image" src="https://user-images.githubusercontent.com/58694638/187996261-ab3be73d-35e0-40c5-a0de-47900b64f1be.png">
 
+### Custom fields
+
+Use a standard JSON Schema type for the saved value, and select the app's
+widget in the UI schema. For example, an address lookup saves a string:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "address": {"type": "string", "title": "Address"}
+  },
+  "required": ["address"]
+}
+```
+
+```json
+{"address":{"ui:widget":"addressLookup"}}
+```
+
+Register the field when creating `JsonForm`:
+
+```dart
+JsonForm(
+  jsonSchema: jsonSchema,
+  uiSchema: uiSchema,
+  fieldBuilders: {
+    'addressLookup': (context, property, value, errorText, onChanged) =>
+        AddressLookupField(
+          initialValue: value as String?,
+          errorText: errorText,
+          onSelected: onChanged,
+        ),
+  },
+  onFormDataSaved: (data) { /* save data */ },
+)
+```
+
+`AddressLookupField` belongs to the consuming app. Call `onChanged` when the
+field value changes and show `errorText` when it is non-null. The form handles
+required/string validation, custom validators, dependencies, and saving. A
+registered builder takes precedence over built-in widgets; unregistered
+`ui:widget` names retain their existing fallback behavior.
+
 ### Conditional fields
 
 Conditional fields use the same JSON Schema annotations as RJSF. Put

@@ -40,8 +40,21 @@ typedef CustomPickerHandler =
 typedef CustomValidatorHandler =
     Map<String, String? Function(dynamic)?> Function();
 
-typedef JsonFormLinkTapCallback =
-    void Function(String text, String? href, String title);
+/// Builds a custom field selected by `ui:widget`. Call [onChanged] whenever
+/// the value changes and display [errorText] when it is non-null.
+typedef JsonFormFieldBuilder = Widget Function(
+  BuildContext context,
+  SchemaProperty property,
+  dynamic value,
+  String? errorText,
+  ValueChanged<dynamic> onChanged,
+);
+
+typedef JsonFormLinkTapCallback = void Function(
+  String text,
+  String? href,
+  String title,
+);
 
 class JsonForm extends StatefulWidget {
   const JsonForm({
@@ -55,6 +68,7 @@ class JsonForm extends StatefulWidget {
     this.jsonFormSchemaUiConfig,
     this.customPickerHandler,
     this.customValidatorHandler,
+    this.fieldBuilders = const {},
     this.onChanged,
     this.onLinkTap,
     this.initialData,
@@ -85,6 +99,10 @@ class JsonForm extends StatefulWidget {
   final CustomPickerHandler? customPickerHandler;
 
   final CustomValidatorHandler? customValidatorHandler;
+
+  /// Custom fields keyed by the property's `ui:widget` name.
+  /// The app owns their UI and integrations; JsonForm owns form state.
+  final Map<String, JsonFormFieldBuilder> fieldBuilders;
 
   final ValueChanged<dynamic>? onChanged;
 
@@ -140,14 +158,12 @@ class _JsonFormState extends State<JsonForm> {
     _formData = Map<String, dynamic>.from(widget.initialData ?? {});
     mainSchema =
         (Schema.fromJson(
-                json.decode(widget.jsonSchema),
-                id: kGenesisIdKey,
-                initialData: widget.initialData,
-              )
-              as SchemaObject)
-          ..setUiSchema(
-            widget.uiSchema != null ? json.decode(widget.uiSchema!) : null,
-          );
+          json.decode(widget.jsonSchema),
+          id: kGenesisIdKey,
+          initialData: widget.initialData,
+        ) as SchemaObject)..setUiSchema(
+          widget.uiSchema != null ? json.decode(widget.uiSchema!) : null,
+        );
     mainSchema.resolveConditions(_formData);
 
     super.initState();
@@ -161,6 +177,7 @@ class _JsonFormState extends State<JsonForm> {
       initialFileValueHandler: widget.initialFileValueHandler,
       customPickerHandler: widget.customPickerHandler,
       customValidatorHandler: widget.customValidatorHandler,
+      fieldBuilders: widget.fieldBuilders,
       onChanged: widget.onChanged,
       onLinkTap: widget.onLinkTap,
       initialData: _formData,
