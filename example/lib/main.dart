@@ -50,7 +50,7 @@ const demoJsonSchema = '''
     "favoriteColor": {
       "type": "string",
       "title": "Favorite color",
-      "description": "Enum + enumNames: radio in stepped mode, dropdown in classic",
+      "description": "Choose your **favorite color** — there is *no wrong answer*.\\n\\n- **Red** for a warm look\\n- **Green** for a natural feel\\n- **Blue** for a calm mood\\n\\nExplore [color palettes](https://m3.material.io/styles/color/overview).",
       "enum": ["red", "green", "blue"],
       "enumNames": ["Red", "Green", "Blue"]
     },

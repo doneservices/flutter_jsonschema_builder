@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_jsonschema_builder/flutter_jsonschema_builder.dart';
 import 'package:flutter_jsonschema_builder/src/builder/stepped_form_builder.dart';
+import 'package:flutter_jsonschema_builder/src/builder/description_widget.dart';
 
 class FieldHeader extends StatelessWidget {
   const FieldHeader({required this.property, this.showTitle = true, super.key});
@@ -34,7 +35,8 @@ class FieldHeader extends StatelessWidget {
           ),
         if (description != null && description.isNotEmpty) ...[
           const SizedBox(height: 4),
-          Text(description, style: descriptionStyle),
+          Description(text: description, style: descriptionStyle),
+          const SizedBox(height: 8),
         ],
         if (isStepped) const SizedBox(height: 12),
       ],

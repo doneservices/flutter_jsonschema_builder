@@ -103,6 +103,22 @@ Widget build(BuildContext context) {
 ```
 <img width="364" alt="image" src="https://user-images.githubusercontent.com/58694638/187986742-3b1aa96c-4a85-42a3-aec0-dac62a8515a4.png">
 
+### Question descriptions
+
+Question `description` values support Markdown in both full-form and stepped
+mode, including **bold**, *italic*, and lists. UI schema `ui:description`
+overrides support the same formatting.
+Markdown links such as `[Flutter](https://flutter.dev)` open when tapped.
+Supported link schemes are `https`, `http`, `mailto`, `tel`, and `sms`.
+
+```json
+"firstName": {
+  "type": "string",
+  "title": "First name",
+  "description": "Enter your **given name**.\n\n- Use your full name\n- Avoid nicknames"
+}
+```
+
 ### Using arrays & Files
 ```dart
   final json = '''
