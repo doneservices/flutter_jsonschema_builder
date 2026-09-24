@@ -15,6 +15,11 @@ typedef JsonFormStepProgressBuilder =
 /// Builds a navigation button that must invoke [onPressed] when tapped.
 typedef JsonFormStepButtonBuilder = Widget Function(VoidCallback onPressed);
 
+/// Builds the intro screen's start button; [text] is the `ui:intro`
+/// `buttonText` or [JsonFormSteppedConfig.introButtonText].
+typedef JsonFormIntroButtonBuilder =
+    Widget Function(VoidCallback onPressed, String text);
+
 /// Builds compact previews for file answers on the review page.
 typedef JsonFormReviewFileBuilder =
     Widget Function(
@@ -42,6 +47,7 @@ class JsonFormSteppedConfig {
     this.progressBuilder,
     this.nextButtonBuilder,
     this.backButtonBuilder,
+    this.introButtonBuilder,
     this.reviewFileBuilder,
     this.nextButtonText = 'Next',
     this.backButtonText = 'Previous',
@@ -83,6 +89,10 @@ class JsonFormSteppedConfig {
   final JsonFormStepButtonBuilder? nextButtonBuilder;
 
   final JsonFormStepButtonBuilder? backButtonBuilder;
+
+  /// start button of the `ui:intro` screen; falls back to
+  /// [nextButtonBuilder] when that is set, then to a default button
+  final JsonFormIntroButtonBuilder? introButtonBuilder;
 
   final JsonFormReviewFileBuilder? reviewFileBuilder;
 

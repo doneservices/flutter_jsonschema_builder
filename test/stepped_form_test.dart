@@ -465,8 +465,7 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(find.text('Next'));
-      await tester.pumpAndSettle();
+      // resumes on bio, the step after the prefilled photo
       await tester.tap(find.text('Next'));
       await tester.pumpAndSettle();
 
@@ -509,9 +508,7 @@ void main() {
           ),
         ),
       );
-      await tester.pump();
-
-      await tester.tap(find.text('Next'));
+      // the only step is prefilled, so the form resumes on the review
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('review-thumbnail')), findsOneWidget);
@@ -962,6 +959,92 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Go'), findsNothing);
+    expect(find.text('What is your name?'), findsOneWidget);
+  });
+
+  group('resuming from initial data', () {
+    Widget form({
+      required Map<String, dynamic> initialData,
+      ValueSetter<dynamic>? onSaved,
+      bool showReviewStep = false,
+    }) => buildTestApp(
+      JsonForm(
+        jsonSchema: testJsonSchema,
+        uiSchema: '''{"ui:intro": {"buttonText": "Go"}}''',
+        initialData: initialData,
+        displayMode: JsonFormDisplayMode.stepped,
+        steppedConfig: JsonFormSteppedConfig(showReviewStep: showReviewStep),
+        onFormDataSaved: onSaved ?? (_) {},
+      ),
+    );
+
+    testWidgets('skips the intro and opens the step after the last answer', (
+      tester,
+    ) async {
+      await tester.pumpWidget(form(initialData: {'age': '30'}));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Go'), findsNothing);
+      expect(find.text('3 / 3'), findsOneWidget);
+
+      // the skipped name step is missing its required answer
+      dynamic saved;
+      await tester.pumpWidget(
+        form(initialData: {'age': '30'}, onSaved: (data) => saved = data),
+      );
+      await tester.tap(find.text('Submit'));
+      await tester.pumpAndSettle();
+      expect(saved, isNull);
+      expect(find.text('What is your name?'), findsOneWidget);
+    });
+
+    testWidgets('a fully answered form opens on the review and submits', (
+      tester,
+    ) async {
+      dynamic saved;
+      await tester.pumpWidget(
+        form(
+          initialData: {
+            'name': {'first': 'Ada'},
+            'age': '30',
+            'bio': 'Hi',
+          },
+          showReviewStep: true,
+          onSaved: (data) => saved = data,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Review your answers'), findsOneWidget);
+      await tester.tap(find.text('Submit'));
+      await tester.pumpAndSettle();
+      expect(saved, containsPair('bio', 'Hi'));
+    });
+  });
+
+  testWidgets('the intro button falls back to nextButtonBuilder', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      buildTestApp(
+        JsonForm(
+          jsonSchema: testJsonSchema,
+          uiSchema: '''{"ui:intro": {}}''',
+          displayMode: JsonFormDisplayMode.stepped,
+          steppedConfig: JsonFormSteppedConfig(
+            nextButtonBuilder: (onPressed) => OutlinedButton(
+              onPressed: onPressed,
+              child: const Text('Custom'),
+            ),
+          ),
+          onFormDataSaved: (_) {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Custom'));
+    await tester.pumpAndSettle();
     expect(find.text('What is your name?'), findsOneWidget);
   });
 }

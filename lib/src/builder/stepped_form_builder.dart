@@ -55,8 +55,9 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
   final Map<String, GlobalKey<FormState>> _formKeys = {};
   int _currentPage = 0;
 
-  /// the `ui:intro` welcome screen covers the form until it's dismissed
-  late bool _showIntro = widget.mainSchema.uiIntro != null;
+  /// the `ui:intro` welcome screen covers the form until it's dismissed;
+  /// skipped when the form resumes from existing answers
+  late bool _showIntro;
 
   final GlobalKey _controlsKey = GlobalKey();
 
@@ -82,7 +83,48 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
   void initState() {
     super.initState();
     _steps = extractJsonFormSteps(widget.mainSchema);
-    _pageController = PageController();
+    // read once, before any field wrote its default into the data map, so
+    // only answers passed in as initial data count
+    final data = context
+        .getInheritedWidgetOfExactType<WidgetBuilderInherited>()
+        ?.data;
+    _currentPage = data != null ? _resumePage(data) : 0;
+    _showIntro = widget.mainSchema.uiIntro != null && _currentPage == 0;
+    _pageController = PageController(initialPage: _currentPage);
+  }
+
+  static bool _isAnswered(dynamic value) =>
+      value != null &&
+      !(value is String && value.isEmpty) &&
+      !(value is Iterable && value.isEmpty) &&
+      !(value is Map && value.isEmpty);
+
+  bool _stepHasAnswer(JsonFormStep step, Map<String, dynamic> data) => step
+      .schemas
+      .any((schema) => _isAnswered(jsonFormDataAtPath(data, schema.idKey)));
+
+  /// the first step after the last answered one — or the review page (last
+  /// step without it) when the last step is already answered
+  int _resumePage(Map<String, dynamic> data) {
+    final lastAnswered = _steps.lastIndexWhere(
+      (step) => _stepHasAnswer(step, data),
+    );
+    if (lastAnswered < 0 || _pageCount == 0) return 0;
+    return (lastAnswered + 1).clamp(0, _pageCount - 1);
+  }
+
+  /// whether every required field of [step] holds a value; used for steps
+  /// skipped on resume, whose forms were never built and can't validate.
+  /// ponytail: required-only check, format/range validators of prefilled
+  /// answers only run once the user visits the step
+  bool _isStepPrefilled(JsonFormStep step) {
+    final data = WidgetBuilderInherited.of(context).data;
+    return step.schemas.every((schema) {
+      final required = schema is SchemaProperty
+          ? schema.required
+          : schema is SchemaArray && schema.required;
+      return !required || _isAnswered(jsonFormDataAtPath(data, schema.idKey));
+    });
   }
 
   @override
@@ -255,6 +297,7 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
 
     for (var i = 0; i < _steps.length; i++) {
       final formState = _formKeys[_steps[i].id]?.currentState;
+      if (formState == null && _isStepPrefilled(_steps[i])) continue;
       if (formState == null || !formState.validate()) {
         _animateToPage(i);
         return false;
@@ -448,6 +491,19 @@ class _IntroPage extends StatelessWidget {
   final EdgeInsets padding;
   final VoidCallback onStart;
 
+  /// [JsonFormSteppedConfig.introButtonBuilder], else the app's
+  /// [JsonFormSteppedConfig.nextButtonBuilder] so a custom-styled form
+  /// keeps its look, else a default button
+  Widget _startButton(String text) {
+    if (config.introButtonBuilder != null) {
+      return config.introButtonBuilder!(onStart, text);
+    }
+    if (config.nextButtonBuilder != null) {
+      return config.nextButtonBuilder!(onStart);
+    }
+    return ElevatedButton(onPressed: onStart, child: Text(text));
+  }
+
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
@@ -491,10 +547,7 @@ class _IntroPage extends StatelessWidget {
                     ),
                   ),
                 const SizedBox(height: 32),
-                ElevatedButton(
-                  onPressed: onStart,
-                  child: Text(intro.buttonText ?? config.introButtonText),
-                ),
+                _startButton(intro.buttonText ?? config.introButtonText),
               ],
             ),
           ),

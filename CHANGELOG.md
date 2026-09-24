@@ -3,7 +3,10 @@
 ## Unreleased
 
 * Added a Typeform-style intro screen for the stepped mode via a root-level
-  `ui:intro` entry (title, Markdown description, media, start button).
+  `ui:intro` entry (title, Markdown description, media, start button), with
+  `introButtonBuilder` (falls back to `nextButtonBuilder`).
+* The stepped mode resumes from `initialData`: it skips the intro and opens
+  the step after the last answered one, or the review when all are answered.
 * Added video file fields. The example supports recording, photo-library and
   Files selection from one button, with image and video previews.
 
