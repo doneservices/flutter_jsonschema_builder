@@ -176,9 +176,11 @@ final uiSchema = '''
 ### Custom fields
 
 Use a standard JSON Schema type for the saved value, and select the app's
-widget in the UI schema. For example, an address lookup saves a string:
+widget in the UI schema. This example uses Flutter's `Autocomplete` with local
+address suggestions; the consuming app can supply its own search results:
 
-```json
+```dart
+const jsonSchema = '''
 {
   "type": "object",
   "properties": {
@@ -186,35 +188,41 @@ widget in the UI schema. For example, an address lookup saves a string:
   },
   "required": ["address"]
 }
-```
+''';
+const uiSchema = '{"address":{"ui:widget":"addressLookup"}}';
+const suggestions = ['Sveavägen 1, Stockholm', 'Storgatan 1, Stockholm'];
 
-```json
-{"address":{"ui:widget":"addressLookup"}}
-```
-
-Register the field when creating `JsonForm`:
-
-```dart
-JsonForm(
+final form = JsonForm(
   jsonSchema: jsonSchema,
   uiSchema: uiSchema,
   fieldBuilders: {
     'addressLookup': (context, property, value, errorText, onChanged) =>
-        AddressLookupField(
-          initialValue: value as String?,
-          errorText: errorText,
-          onSelected: onChanged,
+        Autocomplete<String>(
+          initialValue: TextEditingValue(text: value as String? ?? ''),
+          optionsBuilder: (query) => suggestions.where(
+            (address) => address.toLowerCase().contains(query.text.toLowerCase()),
+          ),
+          onSelected: (address) => onChanged(address),
+          fieldViewBuilder: (context, controller, focusNode, onSubmitted) =>
+              TextField(
+                controller: controller,
+                focusNode: focusNode,
+                onChanged: (address) => onChanged(address),
+                decoration: InputDecoration(
+                  labelText: property.title,
+                  errorText: errorText,
+                ),
+              ),
         ),
   },
-  onFormDataSaved: (data) { /* save data */ },
-)
+  onFormDataSaved: (data) => debugPrint('$data'),
+);
 ```
 
-`AddressLookupField` belongs to the consuming app. Call `onChanged` when the
-field value changes and show `errorText` when it is non-null. The form handles
-required/string validation, custom validators, dependencies, and saving. A
-registered builder takes precedence over built-in widgets; unregistered
-`ui:widget` names retain their existing fallback behavior.
+Replace the local suggestions with the app's address search integration. The
+library handles required/string validation, custom validators, dependencies,
+and saving. A registered builder takes precedence over built-in widgets;
+unregistered `ui:widget` names retain their existing fallback behavior.
 
 ### Conditional fields
 
