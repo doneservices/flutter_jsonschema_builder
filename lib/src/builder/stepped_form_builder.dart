@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_jsonschema_builder/src/builder/description_widget.dart';
 import 'package:flutter_jsonschema_builder/src/builder/logic/object_schema_logic.dart';
 import 'package:flutter_jsonschema_builder/src/builder/logic/widget_builder_logic.dart';
 import 'package:flutter_jsonschema_builder/src/builder/stepped_form_widgets.dart';
@@ -53,6 +54,9 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
   late final PageController _pageController;
   final Map<String, GlobalKey<FormState>> _formKeys = {};
   int _currentPage = 0;
+
+  /// the `ui:intro` welcome screen covers the form until it's dismissed
+  late bool _showIntro = widget.mainSchema.uiIntro != null;
 
   final GlobalKey _controlsKey = GlobalKey();
 
@@ -295,7 +299,7 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
 
         final totalPages = _pageCount > 0 ? _pageCount : 1;
 
-        return SteppedFormScope(
+        final form = SteppedFormScope(
           requestAutoAdvance: _requestAutoAdvance,
           onTextSubmitted: _onTextSubmitted,
           controlsClearance: _controlsClearance,
@@ -404,7 +408,98 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
             ),
           ),
         );
+
+        return AnimatedSwitcher(
+          duration: config.transitionDuration,
+          switchInCurve: config.transitionCurve,
+          switchOutCurve: config.transitionCurve,
+          child: _showIntro
+              ? _IntroPage(
+                  key: const ValueKey('__intro__'),
+                  intro: widget.mainSchema.uiIntro!,
+                  mainSchema: widget.mainSchema,
+                  config: config,
+                  padding: widget.padding,
+                  onStart: () => setState(() => _showIntro = false),
+                )
+              : form,
+        );
       },
+    );
+  }
+}
+
+/// Typeform-style welcome screen from `ui:intro`: media, title, Markdown
+/// description and a start button, vertically centered (scrolls when it
+/// doesn't fit).
+class _IntroPage extends StatelessWidget {
+  const _IntroPage({
+    super.key,
+    required this.intro,
+    required this.mainSchema,
+    required this.config,
+    required this.padding,
+    required this.onStart,
+  });
+
+  final JsonFormIntro intro;
+  final SchemaObject mainSchema;
+  final JsonFormSteppedConfig config;
+  final EdgeInsets padding;
+  final VoidCallback onStart;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final title =
+        intro.title ?? (mainSchema.title != kNoTitle ? mainSchema.title : null);
+    final description = intro.description ?? mainSchema.description;
+
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        padding: padding,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minHeight: constraints.maxHeight - padding.vertical,
+          ),
+          child: SafeArea(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                if (intro.media != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 24),
+                    child: JsonFormStepMedia(
+                      media: intro.media!,
+                      builder: config.mediaBuilder,
+                    ),
+                  ),
+                if (title != null)
+                  Text(
+                    title,
+                    style: config.stepTitleStyle ?? textTheme.headlineMedium,
+                    textAlign: TextAlign.center,
+                  ),
+                if (description != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: Description(
+                      text: description,
+                      style: config.stepDescriptionStyle ?? textTheme.bodyLarge,
+                      textAlign: WrapAlignment.center,
+                    ),
+                  ),
+                const SizedBox(height: 32),
+                ElevatedButton(
+                  onPressed: onStart,
+                  child: Text(intro.buttonText ?? config.introButtonText),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

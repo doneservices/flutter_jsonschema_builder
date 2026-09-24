@@ -62,6 +62,11 @@ class SchemaObject extends Schema {
             uiMedia = JsonFormMedia.fromJson(Map<String, dynamic>.from(data));
           }
           break;
+        case "ui:intro":
+          if (data is Map) {
+            uiIntro = JsonFormIntro.fromJson(Map<String, dynamic>.from(data));
+          }
+          break;
         default:
           break;
       }
@@ -108,6 +113,10 @@ class SchemaObject extends Schema {
   List<String> required;
   List<Schema>? properties;
   List<String>? order;
+
+  /// parsed from `ui:intro`; only read on the root object, by the stepped
+  /// display mode
+  JsonFormIntro? uiIntro;
 
   /// the dependencies keyword from an earlier draft of JSON Schema
   /// (note that this is not part of the latest JSON Schema spec, though).

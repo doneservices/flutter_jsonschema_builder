@@ -214,6 +214,7 @@ conversational, wizard-style experience — instead of rendering everything on
 one page.
 
 <p>
+  <img width="260" alt="The ui:intro welcome screen with a start button" src="doc/images/stepped-intro.png">
   <img width="260" alt="A step with a Lottie animation and grouped name fields" src="doc/images/stepped-media-step.png">
   <img width="260" alt="A step with an image and an email field" src="doc/images/stepped-image-step.png">
   <img width="260" alt="The review step listing all answers with tap-to-edit" src="doc/images/stepped-review.png">
@@ -295,6 +296,27 @@ shared `ui:group` value in the ui schema:
 `first` and `last` share one step (placed where the first group member appears),
 while the data stays flat: `{"first": ..., "last": ..., "email": ...}`. The
 group's step takes its `ui:media` from the first member that declares one.
+
+#### Intro screen
+
+A Typeform-style welcome screen before the first step, declared with
+`ui:intro` at the root of the ui schema:
+
+```json
+{
+  "ui:intro": {
+    "title": "Hi there!",
+    "description": "It takes about **2 minutes**.",
+    "media": {"type": "image", "src": "https://example.com/hello.png"},
+    "buttonText": "Start"
+  }
+}
+```
+
+Every key is optional: `title` and `description` (Markdown) fall back to the
+root schema's own, `media` takes the same shape as `ui:media`, and
+`buttonText` falls back to `JsonFormSteppedConfig.introButtonText`. Only the
+stepped mode renders it.
 
 #### Step media: images and Lottie animations
 

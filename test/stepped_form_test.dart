@@ -936,4 +936,32 @@ void main() {
       expect(pageView.scrollDirection, Axis.horizontal);
     });
   });
+
+  testWidgets('ui:intro shows a welcome screen until start is tapped', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      buildTestApp(
+        JsonForm(
+          jsonSchema: testJsonSchema,
+          uiSchema:
+              '''{"ui:intro": {"description": "Takes **2 minutes**", "buttonText": "Go"}}''',
+          displayMode: JsonFormDisplayMode.stepped,
+          onFormDataSaved: (_) {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // title falls back to the root schema's
+    expect(find.text('Onboarding'), findsOneWidget);
+    expect(find.text('Takes 2 minutes', findRichText: true), findsOneWidget);
+    expect(find.text('What is your name?'), findsNothing);
+
+    await tester.tap(find.text('Go'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Go'), findsNothing);
+    expect(find.text('What is your name?'), findsOneWidget);
+  });
 }

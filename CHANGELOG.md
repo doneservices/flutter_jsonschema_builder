@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+* Added a Typeform-style intro screen for the stepped mode via a root-level
+  `ui:intro` entry (title, Markdown description, media, start button).
 * Added video file fields. The example supports recording, photo-library and
   Files selection from one button, with image and video previews.
 

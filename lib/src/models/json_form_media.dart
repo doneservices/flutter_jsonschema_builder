@@ -56,3 +56,43 @@ class JsonFormMedia {
 
   final BoxFit fit;
 }
+
+/// Welcome screen shown before the first step of the stepped display mode,
+/// parsed from the root-level `ui:intro` entry of the ui schema:
+///
+/// ```json
+/// "ui:intro": {
+///   "title": "Welcome!",
+///   "description": "Takes about **2 minutes**.",
+///   "media": {"type": "image", "src": "https://example.com/hi.png"},
+///   "buttonText": "Start"
+/// }
+/// ```
+///
+/// Every key is optional: `title`/`description` fall back to the root
+/// schema's own, `buttonText` to [JsonFormSteppedConfig.introButtonText].
+/// `"ui:intro": {}` is enough for an intro built from the schema itself.
+class JsonFormIntro {
+  JsonFormIntro({this.title, this.description, this.media, this.buttonText});
+
+  factory JsonFormIntro.fromJson(Map<String, dynamic> json) {
+    final media = json['media'];
+    return JsonFormIntro(
+      title: json['title']?.toString(),
+      description: json['description']?.toString(),
+      media: media is Map
+          ? JsonFormMedia.fromJson(Map<String, dynamic>.from(media))
+          : null,
+      buttonText: json['buttonText']?.toString(),
+    );
+  }
+
+  final String? title;
+
+  /// rendered as Markdown, like question descriptions
+  final String? description;
+
+  final JsonFormMedia? media;
+
+  final String? buttonText;
+}

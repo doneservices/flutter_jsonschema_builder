@@ -46,6 +46,7 @@ class JsonFormSteppedConfig {
     this.nextButtonText = 'Next',
     this.backButtonText = 'Previous',
     this.submitButtonText = 'Submit',
+    this.introButtonText = 'Start',
     this.reviewTitle = 'Review your answers',
     this.reviewDescription = 'Tap an answer to change it',
     this.formatBoolean = _defaultFormatBoolean,
@@ -93,6 +94,10 @@ class JsonFormSteppedConfig {
   /// use [JsonFormSchemaUiConfig.submitButtonBuilder], which is honored in
   /// both display modes.
   final String submitButtonText;
+
+  /// label of the intro screen's start button when `ui:intro` doesn't set
+  /// its own `buttonText`
+  final String introButtonText;
 
   final String reviewTitle;
 

@@ -1,4 +1,5 @@
 import '../models/models.dart';
+
 // Esto transforma el JSON a Modelos
 
 enum SchemaType { string, number, boolean, integer, object, array, enumm }

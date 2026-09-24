@@ -110,6 +110,12 @@ const demoJsonSchema = '''
 /// grouping without changing the data shape, and ui:order.
 const demoUiSchema = '''
 {
+  "ui:intro": {
+    "title": "Hi there! 👋",
+    "description": "Tell us a bit about yourself. It takes about **2 minutes**, and you can go back and change any answer.",
+    "media": {"type": "lottie", "src": "assets/pulse.json", "height": 160},
+    "buttonText": "Let's start"
+  },
   "ui:order": [
     "name",
     "email",
