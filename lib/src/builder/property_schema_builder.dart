@@ -73,6 +73,12 @@ class PropertySchemaBuilder extends StatelessWidget {
                   value is List && value.isEmpty)) {
             return widgetBuilderInherited.uiConfig.requiredText ?? 'Required';
           }
+          if (schemaProperty.enumm != null &&
+              value != null &&
+              value != '' &&
+              !schemaProperty.enumm!.contains(value)) {
+            return 'Value must be one of the allowed options';
+          }
           return _getCustomValidator(
             context,
             schemaProperty.idKey,
