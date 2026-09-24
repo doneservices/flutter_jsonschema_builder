@@ -14,6 +14,7 @@ class WidgetBuilderInherited extends InheritedWidget {
     this.initialFileValueHandler,
     this.customPickerHandler,
     this.customValidatorHandler,
+    this.fieldBuilders = const {},
     this.onChanged,
     this.onLinkTap,
     this.inputDecoration,
@@ -29,6 +30,7 @@ class WidgetBuilderInherited extends InheritedWidget {
   final InitialFileValueHandler? initialFileValueHandler;
   final CustomPickerHandler? customPickerHandler;
   final CustomValidatorHandler? customValidatorHandler;
+  final Map<String, JsonFormFieldBuilder> fieldBuilders;
   final ValueChanged<dynamic>? onChanged;
   final JsonFormLinkTapCallback? onLinkTap;
   late final JsonFormSchemaUiConfig uiConfig;
@@ -103,7 +105,9 @@ class WidgetBuilderInherited extends InheritedWidget {
 
   @override
   bool updateShouldNotify(covariant WidgetBuilderInherited oldWidget) =>
-      mainSchema != oldWidget.mainSchema || onLinkTap != oldWidget.onLinkTap;
+      mainSchema != oldWidget.mainSchema ||
+      onLinkTap != oldWidget.onLinkTap ||
+      fieldBuilders != oldWidget.fieldBuilders;
 
   static WidgetBuilderInherited of(BuildContext context) {
     final result = context

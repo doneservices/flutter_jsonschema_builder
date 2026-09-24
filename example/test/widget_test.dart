@@ -62,6 +62,24 @@ void main() {
     expect(find.text('Files'), findsOneWidget);
   });
 
+  testWidgets('custom choice chips work in the classic form', (tester) async {
+    await tester.pumpWidget(const MyApp());
+    await tester.pump();
+
+    await tester.tap(find.byIcon(Icons.tune));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.text('Switch to classic'));
+    await tester.pumpAndSettle();
+
+    final easy = find.widgetWithText(ChoiceChip, 'Easy');
+    await tester.ensureVisible(easy);
+    await tester.tap(easy);
+    await tester.pump();
+
+    expect(tester.widget<ChoiceChip>(easy).selected, isTrue);
+  });
+
   testWidgets('demo builds previews for selected images and videos', (
     WidgetTester tester,
   ) async {
