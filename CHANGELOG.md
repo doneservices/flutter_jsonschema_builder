@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+* Fixed a crash when a number or integer field got a numeric `initialData`
+  value or `default` (e.g. `{"age": 30}` instead of `{"age": "30"}`).
 * Added video file fields. The example supports recording, photo-library and
   Files selection from one button, with image and video previews.
 
