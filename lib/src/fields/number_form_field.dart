@@ -80,7 +80,8 @@ class _NumberJFormFieldState extends State<NumberJFormField> {
                   steppedScope.onTextSubmitted();
                 },
           inputFormatters: <TextInputFormatter>[
-            FilteringTextInputFormatter.allow(RegExp('[0-9.,]+')),
+            // signs and exponents too: numeric values arrive as e.g. `1e-7`
+            FilteringTextInputFormatter.allow(RegExp('[0-9.,eE+-]+')),
           ],
           autofocus: false,
           initialValue: widget.property.defaultValue,
