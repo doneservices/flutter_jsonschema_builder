@@ -317,15 +317,17 @@ Every key is optional: `title` and `description` (Markdown) fall back to the
 root schema's own, `media` takes the same shape as `ui:media`, and
 `buttonText` falls back to `JsonFormSteppedConfig.introButtonText`. The start
 button is built by `JsonFormSteppedConfig.introButtonBuilder`, falling back to
-`nextButtonBuilder` when that is set. Only the stepped mode renders it.
+`nextButtonBuilder` when that is set (which then shows its own label, not
+`buttonText`). Only the stepped mode renders it.
 
 #### Resuming from existing answers
 
 When `initialData` already holds answers, the stepped mode skips the intro and
-opens the first step after the last answered one — or the review step (the
-last step without it) when the form is already complete. Skipped steps count
-as done at submit when their required fields hold a value; otherwise submit
-takes the user there.
+opens the step holding the first question after the last answered one — or
+the review step (the last step without it) when the last question is
+answered. Skipped steps count as done at submit when their required fields
+hold a value (their defaults are filled in); otherwise submit takes the user
+there.
 
 #### Step media: images and Lottie animations
 

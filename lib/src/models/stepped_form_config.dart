@@ -116,11 +116,13 @@ class JsonFormSteppedConfig {
   /// how boolean answers are displayed (review step); defaults to Yes/No
   final JsonFormBooleanFormatter formatBoolean;
 
-  /// style of step titles, defaults to [TextTheme.headlineSmall] of the
-  /// ambient theme
+  /// style of step titles (and the `ui:intro` title), defaults to
+  /// [TextTheme.headlineSmall] of the ambient theme ([TextTheme.headlineMedium]
+  /// on the intro)
   final TextStyle? stepTitleStyle;
 
-  /// style of step descriptions, defaults to [TextTheme.bodyMedium] of the
-  /// ambient theme
+  /// style of step descriptions (and the `ui:intro` description), defaults
+  /// to [TextTheme.bodyMedium] of the ambient theme ([TextTheme.bodyLarge]
+  /// on the intro)
   final TextStyle? stepDescriptionStyle;
 }

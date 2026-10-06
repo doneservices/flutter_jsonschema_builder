@@ -88,8 +88,9 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
     final data = context
         .getInheritedWidgetOfExactType<WidgetBuilderInherited>()
         ?.data;
-    _currentPage = data != null ? _resumePage(data) : 0;
-    _showIntro = widget.mainSchema.uiIntro != null && _currentPage == 0;
+    final resumePage = data != null ? _resumePage(data) : null;
+    _currentPage = resumePage ?? 0;
+    _showIntro = widget.mainSchema.uiIntro != null && resumePage == null;
     _pageController = PageController(initialPage: _currentPage);
   }
 
@@ -99,32 +100,60 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
       !(value is Iterable && value.isEmpty) &&
       !(value is Map && value.isEmpty);
 
-  bool _stepHasAnswer(JsonFormStep step, Map<String, dynamic> data) => step
-      .schemas
-      .any((schema) => _isAnswered(jsonFormDataAtPath(data, schema.idKey)));
+  /// the questions of [schema]: itself, or every leaf of a nested object
+  static Iterable<Schema> _questions(Schema schema) => schema is SchemaObject
+      ? (schema.properties ?? const <Schema>[]).expand(_questions)
+      : [schema];
 
-  /// the first step after the last answered one — or the review page (last
-  /// step without it) when the last step is already answered
-  int _resumePage(Map<String, dynamic> data) {
-    final lastAnswered = _steps.lastIndexWhere(
-      (step) => _stepHasAnswer(step, data),
+  /// the step holding the first question after the last answered one — or
+  /// the review page (last step without it) when the last question is
+  /// answered; null when nothing is answered yet
+  int? _resumePage(Map<String, dynamic> data) {
+    final questions = [
+      for (var i = 0; i < _steps.length; i++)
+        for (final question in _steps[i].schemas.expand(_questions))
+          (step: i, schema: question),
+    ];
+    final lastAnswered = questions.lastIndexWhere(
+      (q) => _isAnswered(jsonFormDataAtPath(data, q.schema.idKey)),
     );
-    if (lastAnswered < 0 || _pageCount == 0) return 0;
-    return (lastAnswered + 1).clamp(0, _pageCount - 1);
+    if (lastAnswered < 0) return null;
+    return lastAnswered + 1 < questions.length
+        ? questions[lastAnswered + 1].step
+        : _pageCount - 1;
   }
 
-  /// whether every required field of [step] holds a value; used for steps
-  /// skipped on resume, whose forms were never built and can't validate.
+  /// whether every required question of [step] holds a value; used for
+  /// steps skipped on resume, whose forms were never built and can't
+  /// validate. Writes the defaults of its unanswered questions, which a
+  /// built field would have written itself.
   /// ponytail: required-only check, format/range validators of prefilled
   /// answers only run once the user visits the step
-  bool _isStepPrefilled(JsonFormStep step) {
-    final data = WidgetBuilderInherited.of(context).data;
-    return step.schemas.every((schema) {
-      final required = schema is SchemaProperty
-          ? schema.required
-          : schema is SchemaArray && schema.required;
-      return !required || _isAnswered(jsonFormDataAtPath(data, schema.idKey));
+  bool _acceptSkippedStep(JsonFormStep step) {
+    final inherited = WidgetBuilderInherited.of(context);
+    final questions = step.schemas.expand(_questions).toList();
+    final complete = questions.every((question) {
+      final required = switch (question) {
+        SchemaProperty(:final required) ||
+        SchemaArray(:final required) => required,
+        _ => false,
+      };
+      return !required ||
+          _isAnswered(jsonFormDataAtPath(inherited.data, question.idKey));
     });
+    if (!complete) return false;
+
+    for (final question in questions.whereType<SchemaProperty>()) {
+      if (question.defaultValue != null &&
+          jsonFormDataAtPath(inherited.data, question.idKey) == null) {
+        inherited.updateObjectData(
+          inherited.data,
+          question.idKey,
+          question.defaultValue,
+        );
+      }
+    }
+    return true;
   }
 
   @override
@@ -297,7 +326,7 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
 
     for (var i = 0; i < _steps.length; i++) {
       final formState = _formKeys[_steps[i].id]?.currentState;
-      if (formState == null && _isStepPrefilled(_steps[i])) continue;
+      if (formState == null && _acceptSkippedStep(_steps[i])) continue;
       if (formState == null || !formState.validate()) {
         _animateToPage(i);
         return false;

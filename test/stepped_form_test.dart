@@ -981,21 +981,96 @@ void main() {
     testWidgets('skips the intro and opens the step after the last answer', (
       tester,
     ) async {
-      await tester.pumpWidget(form(initialData: {'age': '30'}));
+      dynamic saved;
+      await tester.pumpWidget(
+        form(initialData: {'age': '30'}, onSaved: (data) => saved = data),
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('Go'), findsNothing);
       expect(find.text('3 / 3'), findsOneWidget);
 
       // the skipped name step is missing its required answer
-      dynamic saved;
-      await tester.pumpWidget(
-        form(initialData: {'age': '30'}, onSaved: (data) => saved = data),
-      );
       await tester.tap(find.text('Submit'));
       await tester.pumpAndSettle();
       expect(saved, isNull);
       expect(find.text('What is your name?'), findsOneWidget);
+    });
+
+    testWidgets('a partly answered step is where the form resumes', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        form(
+          initialData: {
+            'name': {'first': 'Ada'},
+          },
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // "last" is the next question, on the same step as "first"
+      expect(find.text('Go'), findsNothing);
+      expect(find.text('1 / 3'), findsOneWidget);
+      expect(find.text('What is your name?'), findsOneWidget);
+    });
+
+    testWidgets('answers skip the intro of a single-step form', (tester) async {
+      await tester.pumpWidget(
+        buildTestApp(
+          JsonForm(
+            jsonSchema:
+                '''{"type": "object", "properties": {"bio": {"type": "string", "title": "Bio"}}}''',
+            uiSchema: '''{"ui:intro": {"buttonText": "Go"}}''',
+            initialData: const {'bio': 'Hi'},
+            displayMode: JsonFormDisplayMode.stepped,
+            onFormDataSaved: (_) {},
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Go'), findsNothing);
+      expect(find.text('Submit'), findsOneWidget);
+    });
+
+    testWidgets('skipped steps contribute their defaults on submit', (
+      tester,
+    ) async {
+      dynamic saved;
+      await tester.pumpWidget(
+        buildTestApp(
+          JsonForm(
+            jsonSchema: '''
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "object",
+      "required": ["first"],
+      "properties": {
+        "first": {"type": "string", "title": "First name"},
+        "nick": {"type": "string", "title": "Nickname", "default": "Ace"}
+      }
+    },
+    "bio": {"type": "string", "title": "Bio"}
+  }
+}
+''',
+            initialData: const {
+              'bio': 'Hi',
+              'name': {'first': 'Ada'},
+            },
+            displayMode: JsonFormDisplayMode.stepped,
+            onFormDataSaved: (data) => saved = data,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Submit'));
+      await tester.pumpAndSettle();
+      expect(saved['name'], {'first': 'Ada', 'nick': 'Ace'});
     });
 
     testWidgets('a fully answered form opens on the review and submits', (

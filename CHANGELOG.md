@@ -7,6 +7,8 @@
   `introButtonBuilder` (falls back to `nextButtonBuilder`).
 * The stepped mode resumes from `initialData`: it skips the intro and opens
   the step after the last answered one, or the review when all are answered.
+* Fixed `initialData` being copied shallowly: saving a nested field mutated
+  the caller's map (and crashed on a const one).
 * Added video file fields. The example supports recording, photo-library and
   Files selection from one button, with image and video previews.
 
