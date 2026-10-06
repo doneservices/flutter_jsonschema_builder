@@ -11,7 +11,7 @@ String? inputValidationJsonSchema({
     return property.required ? 'Required' : null;
   }
 
-  if ((newValue.length <= (property.minLength?.toInt() ?? 0)) &&
+  if ((newValue.length < (property.minLength?.toInt() ?? 0)) &&
       property.minLength != null) {
     return 'should NOT be shorter than ${property.minLength} characters';
   }

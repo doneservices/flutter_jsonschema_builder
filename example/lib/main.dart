@@ -56,6 +56,11 @@ const demoJsonSchema = '''
       "enum": ["red", "green", "blue"],
       "enumNames": ["Red", "Green", "Blue"]
     },
+    "formExperience": {
+      "type": "string",
+      "title": "How was this form?",
+      "enum": ["Easy", "Okay", "Hard"]
+    },
     "newsletter": {
       "type": "boolean",
       "title": "Subscribe to the newsletter",
@@ -107,7 +112,8 @@ const demoJsonSchema = '''
 
 /// Ui schema showing the main keys: ui:media (bundled assets and a custom
 /// lottie type; rendered by the stepped mode only), ui:group for same-step
-/// grouping without changing the data shape, and ui:order.
+/// grouping without changing the data shape, ui:widget for a custom field,
+/// and ui:order.
 const demoUiSchema = '''
 {
   "ui:order": [
@@ -116,6 +122,7 @@ const demoUiSchema = '''
     "birthDate",
     "age",
     "favoriteColor",
+    "formExperience",
     "newsletter",
     "pet",
     "street",
@@ -130,6 +137,7 @@ const demoUiSchema = '''
   "favoriteColor": {
     "ui:media": {"type": "lottie", "src": "assets/pulse.json", "height": 120}
   },
+  "formExperience": {"ui:widget": "choiceChips"},
   "avatar": {
     "ui:options": {"filePreview": true, "fileType": "image"}
   },
@@ -224,6 +232,7 @@ class _DemoHomePageState extends State<DemoHomePage> {
       key: ValueKey('stepped-$_transitionAxis-$_showReviewStep'),
       jsonSchema: demoJsonSchema,
       uiSchema: demoUiSchema,
+      fieldBuilders: {'choiceChips': _buildChoiceChips},
       showDebugElements: false,
       fileHandler: () => {'*': (property) => pickDemoFiles(context, property)},
       jsonFormSchemaUiConfig: buildDemoFileUiConfig(),
@@ -250,6 +259,7 @@ class _DemoHomePageState extends State<DemoHomePage> {
       child: JsonForm(
         jsonSchema: demoJsonSchema,
         uiSchema: demoUiSchema,
+        fieldBuilders: {'choiceChips': _buildChoiceChips},
         showDebugElements: false,
         fileHandler:
             () => {'*': (property) => pickDemoFiles(context, property)},
@@ -297,4 +307,38 @@ class _DemoHomePageState extends State<DemoHomePage> {
           ),
     );
   }
+}
+
+Widget _buildChoiceChips(
+  BuildContext context,
+  SchemaProperty property,
+  dynamic value,
+  String? errorText,
+  ValueChanged<dynamic> onChanged,
+) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(property.title),
+      Wrap(
+        spacing: 8,
+        children: [
+          for (final choice in property.enumm!.cast<String>())
+            ChoiceChip(
+              label: Text(choice),
+              selected: value == choice,
+              onSelected:
+                  property.disabled == true || property.readOnly
+                      ? null
+                      : (selected) => onChanged(selected ? choice : null),
+            ),
+        ],
+      ),
+      if (errorText != null)
+        Text(
+          errorText,
+          style: TextStyle(color: Theme.of(context).colorScheme.error),
+        ),
+    ],
+  );
 }
