@@ -1047,4 +1047,23 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('What is your name?'), findsOneWidget);
   });
+
+  testWidgets('intro description links go through onLinkTap', (tester) async {
+    final taps = <String?>[];
+    await tester.pumpWidget(
+      buildTestApp(
+        JsonForm(
+          jsonSchema: testJsonSchema,
+          uiSchema: '''{"ui:intro": {"description": "[Terms](app://terms)"}}''',
+          displayMode: JsonFormDisplayMode.stepped,
+          onLinkTap: (_, href, _) => taps.add(href),
+          onFormDataSaved: (_) {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Terms', findRichText: true));
+    expect(taps, ['app://terms']);
+  });
 }
