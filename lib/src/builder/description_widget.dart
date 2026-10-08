@@ -3,10 +3,16 @@ import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_jsonschema_builder/src/builder/logic/widget_builder_logic.dart';
 
 class Description extends StatelessWidget {
-  const Description({required this.text, this.style, super.key});
+  const Description({
+    required this.text,
+    this.style,
+    this.textAlign = WrapAlignment.start,
+    super.key,
+  });
 
   final String text;
   final TextStyle? style;
+  final WrapAlignment textAlign;
 
   @override
   Widget build(BuildContext context) => MarkdownBody(
@@ -16,6 +22,6 @@ class Description extends StatelessWidget {
         ?.onLinkTap,
     styleSheet: MarkdownStyleSheet.fromTheme(
       Theme.of(context),
-    ).copyWith(p: style, listBullet: style),
+    ).copyWith(p: style, listBullet: style, textAlign: textAlign),
   );
 }

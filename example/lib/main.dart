@@ -110,6 +110,12 @@ const demoJsonSchema = '''
 /// grouping without changing the data shape, and ui:order.
 const demoUiSchema = '''
 {
+  "ui:intro": {
+    "title": "Hi there! 👋",
+    "description": "Tell us a bit about yourself. It takes about **2 minutes**, and you can go back and change any answer.",
+    "media": {"type": "lottie", "src": "assets/pulse.json", "height": 160},
+    "buttonText": "Let's start"
+  },
   "ui:order": [
     "name",
     "email",
@@ -155,6 +161,7 @@ class _DemoHomePageState extends State<DemoHomePage> {
   JsonFormDisplayMode _displayMode = JsonFormDisplayMode.stepped;
   Axis _transitionAxis = Axis.vertical;
   bool _showReviewStep = true;
+  bool _prefill = false;
 
   @override
   Widget build(BuildContext context) {
@@ -184,6 +191,9 @@ class _DemoHomePageState extends State<DemoHomePage> {
                     case 'review':
                       _showReviewStep = !_showReviewStep;
                       break;
+                    case 'prefill':
+                      _prefill = !_prefill;
+                      break;
                   }
                 }),
             itemBuilder:
@@ -209,6 +219,12 @@ class _DemoHomePageState extends State<DemoHomePage> {
                         'Review step: ${_showReviewStep ? 'on' : 'off'}',
                       ),
                     ),
+                    PopupMenuItem(
+                      value: 'prefill',
+                      child: Text(
+                        'Prefilled answers: ${_prefill ? 'on' : 'off'}',
+                      ),
+                    ),
                   ],
                 ],
           ),
@@ -221,12 +237,20 @@ class _DemoHomePageState extends State<DemoHomePage> {
   Widget _buildSteppedForm() {
     // Key forces a fresh form when the knobs change, so toggles apply cleanly.
     return JsonForm(
-      key: ValueKey('stepped-$_transitionAxis-$_showReviewStep'),
+      key: ValueKey('stepped-$_transitionAxis-$_showReviewStep-$_prefill'),
       jsonSchema: demoJsonSchema,
       uiSchema: demoUiSchema,
       showDebugElements: false,
       fileHandler: () => {'*': (property) => pickDemoFiles(context, property)},
       jsonFormSchemaUiConfig: buildDemoFileUiConfig(),
+      // prefilled answers skip the intro and resume after the last answer
+      initialData:
+          _prefill
+              ? const {
+                'name': {'firstName': 'Ada', 'lastName': 'Lovelace'},
+                'email': 'ada@example.com',
+              }
+              : null,
       displayMode: JsonFormDisplayMode.stepped,
       steppedConfig: JsonFormSteppedConfig(
         transitionAxis: _transitionAxis,

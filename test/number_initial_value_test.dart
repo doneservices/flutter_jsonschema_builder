@@ -41,15 +41,13 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
-      expect(find.text('30'), findsOneWidget);
-      if (mode == JsonFormDisplayMode.fullForm) {
-        expect(find.text('1.8'), findsOneWidget);
-      }
+      expect(find.text('1.8'), findsOneWidget);
       if (mode == JsonFormDisplayMode.stepped) {
-        await tester.tap(find.text('Next'));
+        // the answered age step is skipped on resume; go back to it
+        await tester.tap(find.text('Previous'));
         await tester.pumpAndSettle();
-        expect(find.text('1.8'), findsOneWidget);
       }
+      expect(find.text('30'), findsOneWidget);
     });
   }
 

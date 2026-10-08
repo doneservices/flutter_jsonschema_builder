@@ -15,6 +15,11 @@ typedef JsonFormStepProgressBuilder =
 /// Builds a navigation button that must invoke [onPressed] when tapped.
 typedef JsonFormStepButtonBuilder = Widget Function(VoidCallback onPressed);
 
+/// Builds the intro screen's start button; [text] is the `ui:intro`
+/// `buttonText` or [JsonFormSteppedConfig.introButtonText].
+typedef JsonFormIntroButtonBuilder =
+    Widget Function(VoidCallback onPressed, String text);
+
 /// Builds compact previews for file answers on the review page.
 typedef JsonFormReviewFileBuilder =
     Widget Function(
@@ -42,10 +47,12 @@ class JsonFormSteppedConfig {
     this.progressBuilder,
     this.nextButtonBuilder,
     this.backButtonBuilder,
+    this.introButtonBuilder,
     this.reviewFileBuilder,
     this.nextButtonText = 'Next',
     this.backButtonText = 'Previous',
     this.submitButtonText = 'Submit',
+    this.introButtonText = 'Start',
     this.reviewTitle = 'Review your answers',
     this.reviewDescription = 'Tap an answer to change it',
     this.formatBoolean = _defaultFormatBoolean,
@@ -83,6 +90,10 @@ class JsonFormSteppedConfig {
 
   final JsonFormStepButtonBuilder? backButtonBuilder;
 
+  /// start button of the `ui:intro` screen; falls back to
+  /// [nextButtonBuilder] when that is set, then to a default button
+  final JsonFormIntroButtonBuilder? introButtonBuilder;
+
   final JsonFormReviewFileBuilder? reviewFileBuilder;
 
   final String nextButtonText;
@@ -94,6 +105,10 @@ class JsonFormSteppedConfig {
   /// both display modes.
   final String submitButtonText;
 
+  /// label of the intro screen's start button when `ui:intro` doesn't set
+  /// its own `buttonText`
+  final String introButtonText;
+
   final String reviewTitle;
 
   final String? reviewDescription;
@@ -101,11 +116,13 @@ class JsonFormSteppedConfig {
   /// how boolean answers are displayed (review step); defaults to Yes/No
   final JsonFormBooleanFormatter formatBoolean;
 
-  /// style of step titles, defaults to [TextTheme.headlineSmall] of the
-  /// ambient theme
+  /// style of step titles (and the `ui:intro` title), defaults to
+  /// [TextTheme.headlineSmall] of the ambient theme ([TextTheme.headlineMedium]
+  /// on the intro)
   final TextStyle? stepTitleStyle;
 
-  /// style of step descriptions, defaults to [TextTheme.bodyMedium] of the
-  /// ambient theme
+  /// style of step descriptions (and the `ui:intro` description), defaults
+  /// to [TextTheme.bodyMedium] of the ambient theme ([TextTheme.bodyLarge]
+  /// on the intro)
   final TextStyle? stepDescriptionStyle;
 }

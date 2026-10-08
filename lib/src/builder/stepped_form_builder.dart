@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_jsonschema_builder/src/builder/description_widget.dart';
 import 'package:flutter_jsonschema_builder/src/builder/logic/object_schema_logic.dart';
 import 'package:flutter_jsonschema_builder/src/builder/logic/widget_builder_logic.dart';
 import 'package:flutter_jsonschema_builder/src/builder/stepped_form_widgets.dart';
@@ -54,6 +55,10 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
   final Map<String, GlobalKey<FormState>> _formKeys = {};
   int _currentPage = 0;
 
+  /// the `ui:intro` welcome screen covers the form until it's dismissed;
+  /// skipped when the form resumes from existing answers
+  late bool _showIntro;
+
   final GlobalKey _controlsKey = GlobalKey();
 
   /// bottom padding for the pages' scroll views, kept in sync with the
@@ -78,7 +83,80 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
   void initState() {
     super.initState();
     _steps = extractJsonFormSteps(widget.mainSchema);
-    _pageController = PageController();
+    // read once, before any field wrote its default into the data map, so
+    // only answers passed in as initial data count
+    final data = context
+        .getInheritedWidgetOfExactType<WidgetBuilderInherited>()
+        ?.data;
+    final resumePage = data != null ? _resumePage(data) : null;
+    _currentPage = resumePage ?? 0;
+    _showIntro = widget.mainSchema.uiIntro != null && resumePage == null;
+    _pageController = PageController(initialPage: _currentPage);
+  }
+
+  static bool _isAnswered(dynamic value) =>
+      value != null &&
+      !(value is String && value.isEmpty) &&
+      !(value is Iterable && value.isEmpty) &&
+      !(value is Map && value.isEmpty);
+
+  /// the questions of [schema]: itself, or every leaf of a nested object
+  static Iterable<Schema> _questions(Schema schema) => schema is SchemaObject
+      ? (schema.properties ?? const <Schema>[]).expand(_questions)
+      : [schema];
+
+  /// the step holding the first question after the last answered one — or
+  /// the review page (last step without it) when the last question is
+  /// answered; null when nothing is answered yet
+  int? _resumePage(Map<String, dynamic> data) {
+    final questions = [
+      for (var i = 0; i < _steps.length; i++)
+        for (final question in _steps[i].schemas.expand(_questions))
+          (step: i, schema: question),
+    ];
+    final lastAnswered = questions.lastIndexWhere(
+      (q) => _isAnswered(jsonFormDataAtPath(data, q.schema.idKey)),
+    );
+    if (lastAnswered < 0) return null;
+    return lastAnswered + 1 < questions.length
+        ? questions[lastAnswered + 1].step
+        : _pageCount - 1;
+  }
+
+  /// whether every required question of [step] holds a value; used for
+  /// steps skipped on resume, whose forms were never built and can't
+  /// validate. Writes the defaults of its unanswered questions, which a
+  /// built field would have written itself.
+  /// ponytail: required-only check, format/range validators of prefilled
+  /// answers only run once the user visits the step
+  bool _acceptSkippedStep(JsonFormStep step) {
+    final inherited = WidgetBuilderInherited.of(context);
+    final questions = step.schemas.expand(_questions).toList();
+    final complete = questions.every((question) {
+      final required = switch (question) {
+        SchemaProperty(:final required) ||
+        SchemaArray(:final required) => required,
+        _ => false,
+      };
+      return !required ||
+          _isAnswered(jsonFormDataAtPath(inherited.data, question.idKey));
+    });
+    if (!complete) return false;
+
+    for (final question in questions) {
+      if (jsonFormDataAtPath(inherited.data, question.idKey) != null) continue;
+      // mirrors the built fields: a property saves its default, an array
+      // with no items saves `[]` (array `default`s aren't applied anywhere)
+      final value = question is SchemaArray
+          ? <dynamic>[]
+          : question is SchemaProperty
+          ? question.defaultValue
+          : null;
+      if (value != null) {
+        inherited.updateObjectData(inherited.data, question.idKey, value);
+      }
+    }
+    return true;
   }
 
   @override
@@ -251,6 +329,7 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
 
     for (var i = 0; i < _steps.length; i++) {
       final formState = _formKeys[_steps[i].id]?.currentState;
+      if (formState == null && _acceptSkippedStep(_steps[i])) continue;
       if (formState == null || !formState.validate()) {
         _animateToPage(i);
         return false;
@@ -295,7 +374,7 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
 
         final totalPages = _pageCount > 0 ? _pageCount : 1;
 
-        return SteppedFormScope(
+        final form = SteppedFormScope(
           requestAutoAdvance: _requestAutoAdvance,
           onTextSubmitted: _onTextSubmitted,
           controlsClearance: _controlsClearance,
@@ -404,7 +483,108 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
             ),
           ),
         );
+
+        return AnimatedSwitcher(
+          duration: config.transitionDuration,
+          switchInCurve: config.transitionCurve,
+          switchOutCurve: config.transitionCurve,
+          child: _showIntro
+              ? _IntroPage(
+                  key: const ValueKey('__intro__'),
+                  intro: widget.mainSchema.uiIntro!,
+                  mainSchema: widget.mainSchema,
+                  config: config,
+                  padding: widget.padding,
+                  onStart: () => setState(() => _showIntro = false),
+                )
+              : form,
+        );
       },
+    );
+  }
+}
+
+/// Typeform-style welcome screen from `ui:intro`: media, title, Markdown
+/// description and a start button, vertically centered (scrolls when it
+/// doesn't fit).
+class _IntroPage extends StatelessWidget {
+  const _IntroPage({
+    super.key,
+    required this.intro,
+    required this.mainSchema,
+    required this.config,
+    required this.padding,
+    required this.onStart,
+  });
+
+  final JsonFormIntro intro;
+  final SchemaObject mainSchema;
+  final JsonFormSteppedConfig config;
+  final EdgeInsets padding;
+  final VoidCallback onStart;
+
+  /// [JsonFormSteppedConfig.introButtonBuilder], else the app's
+  /// [JsonFormSteppedConfig.nextButtonBuilder] so a custom-styled form
+  /// keeps its look, else a default button
+  Widget _startButton(String text) {
+    if (config.introButtonBuilder != null) {
+      return config.introButtonBuilder!(onStart, text);
+    }
+    if (config.nextButtonBuilder != null) {
+      return config.nextButtonBuilder!(onStart);
+    }
+    return ElevatedButton(onPressed: onStart, child: Text(text));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final title =
+        intro.title ?? (mainSchema.title != kNoTitle ? mainSchema.title : null);
+    final description = intro.description ?? mainSchema.description;
+
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        padding: padding,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minHeight: constraints.maxHeight - padding.vertical,
+          ),
+          child: SafeArea(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                if (intro.media != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 24),
+                    child: JsonFormStepMedia(
+                      media: intro.media!,
+                      builder: config.mediaBuilder,
+                    ),
+                  ),
+                if (title != null)
+                  Text(
+                    title,
+                    style: config.stepTitleStyle ?? textTheme.headlineMedium,
+                    textAlign: TextAlign.center,
+                  ),
+                if (description != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: Description(
+                      text: description,
+                      style: config.stepDescriptionStyle ?? textTheme.bodyLarge,
+                      textAlign: WrapAlignment.center,
+                    ),
+                  ),
+                const SizedBox(height: 32),
+                _startButton(intro.buttonText ?? config.introButtonText),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

@@ -129,15 +129,25 @@ class _JsonFormState extends State<JsonForm> {
 
   /// owned by the state so entered data survives rebuilds of this widget —
   /// WidgetBuilderInherited is recreated on every build and must keep
-  /// receiving the same map instance. A copy of [JsonForm.initialData], so
-  /// saving fields never mutates the caller's map
+  /// receiving the same map instance. A deep copy of [JsonForm.initialData],
+  /// so saving (nested) fields never mutates the caller's maps — which may
+  /// well be const
   late final Map<String, dynamic> _formData;
+
+  static dynamic _deepCopy(dynamic value) => value is Map
+      ? <String, dynamic>{
+          for (final entry in value.entries)
+            entry.key.toString(): _deepCopy(entry.value),
+        }
+      : value is List
+      ? value.map(_deepCopy).toList()
+      : value;
 
   _JsonFormState();
 
   @override
   void initState() {
-    _formData = Map<String, dynamic>.from(widget.initialData ?? {});
+    _formData = _deepCopy(widget.initialData ?? const {});
     mainSchema =
         (Schema.fromJson(
                 json.decode(widget.jsonSchema),

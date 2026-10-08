@@ -465,8 +465,7 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(find.text('Next'));
-      await tester.pumpAndSettle();
+      // resumes on bio, the step after the prefilled photo
       await tester.tap(find.text('Next'));
       await tester.pumpAndSettle();
 
@@ -509,9 +508,7 @@ void main() {
           ),
         ),
       );
-      await tester.pump();
-
-      await tester.tap(find.text('Next'));
+      // the only step is prefilled, so the form resumes on the review
       await tester.pumpAndSettle();
 
       expect(find.byKey(const Key('review-thumbnail')), findsOneWidget);
@@ -935,5 +932,216 @@ void main() {
       final pageView = tester.widget<PageView>(find.byType(PageView));
       expect(pageView.scrollDirection, Axis.horizontal);
     });
+  });
+
+  testWidgets('ui:intro shows a welcome screen until start is tapped', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      buildTestApp(
+        JsonForm(
+          jsonSchema: testJsonSchema,
+          uiSchema:
+              '''{"ui:intro": {"description": "Takes **2 minutes**", "buttonText": "Go"}}''',
+          displayMode: JsonFormDisplayMode.stepped,
+          onFormDataSaved: (_) {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // title falls back to the root schema's
+    expect(find.text('Onboarding'), findsOneWidget);
+    expect(find.text('Takes 2 minutes', findRichText: true), findsOneWidget);
+    expect(find.text('What is your name?'), findsNothing);
+
+    await tester.tap(find.text('Go'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Go'), findsNothing);
+    expect(find.text('What is your name?'), findsOneWidget);
+  });
+
+  group('resuming from initial data', () {
+    Widget form({
+      required Map<String, dynamic> initialData,
+      ValueSetter<dynamic>? onSaved,
+      bool showReviewStep = false,
+    }) => buildTestApp(
+      JsonForm(
+        jsonSchema: testJsonSchema,
+        uiSchema: '''{"ui:intro": {"buttonText": "Go"}}''',
+        initialData: initialData,
+        displayMode: JsonFormDisplayMode.stepped,
+        steppedConfig: JsonFormSteppedConfig(showReviewStep: showReviewStep),
+        onFormDataSaved: onSaved ?? (_) {},
+      ),
+    );
+
+    testWidgets('skips the intro and opens the step after the last answer', (
+      tester,
+    ) async {
+      dynamic saved;
+      await tester.pumpWidget(
+        form(initialData: {'age': 30}, onSaved: (data) => saved = data),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Go'), findsNothing);
+      expect(find.text('3 / 3'), findsOneWidget);
+
+      // the skipped name step is missing its required answer
+      await tester.tap(find.text('Submit'));
+      await tester.pumpAndSettle();
+      expect(saved, isNull);
+      expect(find.text('What is your name?'), findsOneWidget);
+    });
+
+    testWidgets('a partly answered step is where the form resumes', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        form(
+          initialData: {
+            'name': {'first': 'Ada'},
+          },
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // "last" is the next question, on the same step as "first"
+      expect(find.text('Go'), findsNothing);
+      expect(find.text('1 / 3'), findsOneWidget);
+      expect(find.text('What is your name?'), findsOneWidget);
+    });
+
+    testWidgets('answers skip the intro of a single-step form', (tester) async {
+      await tester.pumpWidget(
+        buildTestApp(
+          JsonForm(
+            jsonSchema:
+                '''{"type": "object", "properties": {"bio": {"type": "string", "title": "Bio"}}}''',
+            uiSchema: '''{"ui:intro": {"buttonText": "Go"}}''',
+            initialData: const {'bio': 'Hi'},
+            displayMode: JsonFormDisplayMode.stepped,
+            onFormDataSaved: (_) {},
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Go'), findsNothing);
+      expect(find.text('Submit'), findsOneWidget);
+    });
+
+    testWidgets('skipped steps contribute their defaults on submit', (
+      tester,
+    ) async {
+      dynamic saved;
+      await tester.pumpWidget(
+        buildTestApp(
+          JsonForm(
+            jsonSchema: '''
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "object",
+      "required": ["first"],
+      "properties": {
+        "first": {"type": "string", "title": "First name"},
+        "nick": {"type": "string", "title": "Nickname", "default": "Ace"}
+      }
+    },
+    "tags": {"type": "array", "title": "Tags", "items": {"type": "string"}},
+    "bio": {"type": "string", "title": "Bio"}
+  }
+}
+''',
+            initialData: const {
+              'bio': 'Hi',
+              'name': {'first': 'Ada'},
+            },
+            displayMode: JsonFormDisplayMode.stepped,
+            onFormDataSaved: (data) => saved = data,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Submit'));
+      await tester.pumpAndSettle();
+      expect(saved['name'], {'first': 'Ada', 'nick': 'Ace'});
+      // like a visited array step with no items
+      expect(saved['tags'], isEmpty);
+    });
+
+    testWidgets('a fully answered form opens on the review and submits', (
+      tester,
+    ) async {
+      dynamic saved;
+      await tester.pumpWidget(
+        form(
+          initialData: {
+            'name': {'first': 'Ada'},
+            'age': 30,
+            'bio': 'Hi',
+          },
+          showReviewStep: true,
+          onSaved: (data) => saved = data,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Review your answers'), findsOneWidget);
+      await tester.tap(find.text('Submit'));
+      await tester.pumpAndSettle();
+      expect(saved, containsPair('bio', 'Hi'));
+    });
+  });
+
+  testWidgets('the intro button falls back to nextButtonBuilder', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      buildTestApp(
+        JsonForm(
+          jsonSchema: testJsonSchema,
+          uiSchema: '''{"ui:intro": {}}''',
+          displayMode: JsonFormDisplayMode.stepped,
+          steppedConfig: JsonFormSteppedConfig(
+            nextButtonBuilder: (onPressed) => OutlinedButton(
+              onPressed: onPressed,
+              child: const Text('Custom'),
+            ),
+          ),
+          onFormDataSaved: (_) {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Custom'));
+    await tester.pumpAndSettle();
+    expect(find.text('What is your name?'), findsOneWidget);
+  });
+
+  testWidgets('intro description links go through onLinkTap', (tester) async {
+    final taps = <String?>[];
+    await tester.pumpWidget(
+      buildTestApp(
+        JsonForm(
+          jsonSchema: testJsonSchema,
+          uiSchema: '''{"ui:intro": {"description": "[Terms](app://terms)"}}''',
+          displayMode: JsonFormDisplayMode.stepped,
+          onLinkTap: (_, href, _) => taps.add(href),
+          onFormDataSaved: (_) {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Terms', findRichText: true));
+    expect(taps, ['app://terms']);
   });
 }
