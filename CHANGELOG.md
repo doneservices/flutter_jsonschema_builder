@@ -9,6 +9,8 @@
   the step after the last answered one, or the review when all are answered.
 * Fixed `initialData` being copied shallowly: saving a nested field mutated
   the caller's map (and crashed on a const one).
+* Fixed a crash when a number or integer field got a numeric `initialData`
+  value or `default` (e.g. `{"age": 30}` instead of `{"age": "30"}`).
 * Added video file fields. The example supports recording, photo-library and
   Files selection from one button, with image and video previews.
 

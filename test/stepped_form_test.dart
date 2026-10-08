@@ -983,7 +983,7 @@ void main() {
     ) async {
       dynamic saved;
       await tester.pumpWidget(
-        form(initialData: {'age': '30'}, onSaved: (data) => saved = data),
+        form(initialData: {'age': 30}, onSaved: (data) => saved = data),
       );
       await tester.pumpAndSettle();
 
@@ -1081,7 +1081,7 @@ void main() {
         form(
           initialData: {
             'name': {'first': 'Ada'},
-            'age': '30',
+            'age': 30,
             'bio': 'Hi',
           },
           showReviewStep: true,

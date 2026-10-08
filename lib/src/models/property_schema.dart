@@ -66,12 +66,20 @@ class SchemaProperty extends Schema {
     Schema? parent,
     Map<String, dynamic>? initialData,
   }) {
+    final type = schemaTypeFromString(json['type']);
+    final defaultValue = initialData?[id] ?? safeDefaultValue(json);
     final property = SchemaProperty(
       id: id,
       title: json['title'],
-      type: schemaTypeFromString(json['type']),
+      type: type,
       format: propertyFormatFromString(json['format']),
-      defaultValue: initialData?[id] ?? safeDefaultValue(json),
+      // number fields edit text; a numeric initial value or `default` must
+      // arrive as its string form, like the values those fields save
+      defaultValue:
+          defaultValue is num &&
+              (type == SchemaType.number || type == SchemaType.integer)
+          ? defaultValue.toString()
+          : defaultValue,
       description: json['description'],
       enumm: json['enum'],
       // labels default to the stringified enum values when not given
