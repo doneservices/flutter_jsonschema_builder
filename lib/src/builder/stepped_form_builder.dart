@@ -143,14 +143,17 @@ class _SteppedFormBuilderState extends State<SteppedFormBuilder> {
     });
     if (!complete) return false;
 
-    for (final question in questions.whereType<SchemaProperty>()) {
-      if (question.defaultValue != null &&
-          jsonFormDataAtPath(inherited.data, question.idKey) == null) {
-        inherited.updateObjectData(
-          inherited.data,
-          question.idKey,
-          question.defaultValue,
-        );
+    for (final question in questions) {
+      if (jsonFormDataAtPath(inherited.data, question.idKey) != null) continue;
+      // mirrors the built fields: a property saves its default, an array
+      // with no items saves `[]` (array `default`s aren't applied anywhere)
+      final value = question is SchemaArray
+          ? <dynamic>[]
+          : question is SchemaProperty
+          ? question.defaultValue
+          : null;
+      if (value != null) {
+        inherited.updateObjectData(inherited.data, question.idKey, value);
       }
     }
     return true;

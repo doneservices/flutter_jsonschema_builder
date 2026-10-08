@@ -1053,6 +1053,7 @@ void main() {
         "nick": {"type": "string", "title": "Nickname", "default": "Ace"}
       }
     },
+    "tags": {"type": "array", "title": "Tags", "items": {"type": "string"}},
     "bio": {"type": "string", "title": "Bio"}
   }
 }
@@ -1071,6 +1072,8 @@ void main() {
       await tester.tap(find.text('Submit'));
       await tester.pumpAndSettle();
       expect(saved['name'], {'first': 'Ada', 'nick': 'Ace'});
+      // like a visited array step with no items
+      expect(saved['tags'], isEmpty);
     });
 
     testWidgets('a fully answered form opens on the review and submits', (
